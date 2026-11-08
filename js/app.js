@@ -1146,19 +1146,19 @@ class BudgetApp {
       if (tx.type === 'income') {
         icon = cat?.icon || '📈';
         title = cat?.name || tx.note || 'Доход';
-        metaStr = `${tx.date} • ${accFrom?.name || 'Счёт'}`;
+        metaStr = `${tx.date} • ${accFrom?.name || 'Удалённый счёт'}`;
         amountClass = 'income';
         sign = '+';
       } else if (tx.type === 'expense') {
         icon = cat?.icon || '🛒';
         title = cat?.name || tx.note || 'Расход';
-        metaStr = `${tx.date} • ${accFrom?.name || 'Счёт'}`;
+        metaStr = `${tx.date} • ${accFrom?.name || 'Удалённый счёт'}`;
         amountClass = 'expense';
         sign = '-';
       } else if (tx.type === 'transfer') {
         icon = '🔁';
         title = 'Перевод между счетами';
-        metaStr = `${tx.date} • ${accFrom?.name || '?'} ➔ ${accTo?.name || '?'}`;
+        metaStr = `${tx.date} • ${accFrom?.name || 'Удалённый счёт'} ➔ ${accTo?.name || 'Удалённый счёт'}`;
         amountClass = 'transfer';
         sign = '⇄';
       }
@@ -1488,20 +1488,27 @@ class BudgetApp {
         const goalCount = this.state.goals.filter((goal) => (goal.linkedAccountIds || []).includes(id)).length;
         const recurringCount = (this.state.recurring || []).filter((rec) => rec.accountId === id).length;
 
-        if (transactionCount || goalCount || recurringCount) {
-          this.showToast(
-            `Нельзя удалить «${acc?.name}»: операций — ${transactionCount}, целей — ${goalCount}, регулярных платежей — ${recurringCount}. Сначала перенесите или удалите связи.`,
-            'warning'
-          );
-          return;
-        }
-
-        this.confirmAction('Удаление счёта', `Удалить пустой счёт «${acc?.name}»?`, () => {
+        this.confirmAction('Удаление счёта',
+          `Удалить «${acc?.name}»? Операции (${transactionCount}) останутся в истории без счёта, цели (${goalCount}) будут отвязаны, а регулярные платежи (${recurringCount}) — поставлены на паузу.`,
+          () => {
+          // Keep the financial history, but remove references to the deleted account.
+          this.state.transactions = this.state.transactions.map((tx) => ({
+            ...tx,
+            accountId: tx.accountId === id ? null : tx.accountId,
+            toAccountId: tx.toAccountId === id ? null : tx.toAccountId
+          }));
+          this.state.goals = this.state.goals.map((goal) => ({
+            ...goal,
+            linkedAccountIds: (goal.linkedAccountIds || []).filter((accountId) => accountId !== id)
+          }));
+          this.state.recurring = (this.state.recurring || []).map((rec) => (
+            rec.accountId === id ? { ...rec, accountId: null, status: 'paused' } : rec
+          ));
           this.state.accounts = this.state.accounts.filter((a) => a.id !== id);
           this.logActivity(`Удалён счёт: ${acc?.name}`, 'warning');
           this.saveState();
           this.render();
-          this.showToast('Счёт удалён', 'info');
+          this.showToast('Счёт удалён. Связанные записи сохранены.', 'info');
         });
       });
     });
@@ -2288,7 +2295,7 @@ class BudgetApp {
               <div class="tx-title">${rec.name}</div>
               <div class="tx-meta">
                 <span>${rec.dayOfMonth}-е число каждого месяца</span>
-                <span>• ${acc?.name || 'Счёт'}</span>
+                <span>• ${acc?.name || 'Счёт удалён — выберите новый'}</span>
                 <span class="status-badge ${rec.status === 'active' ? 'confirmed' : 'planned'}">
                   ${rec.status === 'active' ? 'Активен' : 'На паузе'}
                 </span>
@@ -2342,6 +2349,11 @@ class BudgetApp {
   executeRecurring(recId) {
     const rec = this.state.recurring.find((r) => r.id === recId);
     if (!rec) return;
+
+    if (!rec.accountId || !this.state.accounts.some((account) => account.id === rec.accountId)) {
+      this.showToast('У регулярного платежа нет счёта. Откройте «✎» и выберите новый.', 'warning');
+      return;
+    }
 
     if (rec.type === 'expense') {
       const validation = this.validateDepositDebit(rec.accountId, rec.amount);
