@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Budget Planner — Планировщик бюджета</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0b0d13">
+  <meta name="description" content="Минималистичный планировщик личного бюджета в Казахстане с поддержкой депозитов BCC, целей и оффлайн-режима">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+  <!-- Theme Stylesheet (Manrope + JetBrains Mono) -->
+  <link rel="stylesheet" href="./css/pixel-theme.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Top Header Bar -->
+    <header class="top-header">
+      <div class="header-inner">
+        <div class="logo-group">
+          <img src="./icons/icon.svg" alt="Budget Planner" class="logo-icon">
+          <div>
+            <div class="logo-text">Budget Planner</div>
+            <div class="logo-sub">Личные финансы и депозиты</div>
+          </div>
+        </div>
+
+        <!-- Period selector -->
+        <div class="period-picker">
+          <button id="btn-period-prev" title="Предыдущий месяц">◀</button>
+          <span id="current-period-label" class="period-label">Ноябрь 2026</span>
+          <button id="btn-period-next" title="Следующий месяц">▶</button>
+          <button id="btn-period-toggle" class="pixel-btn-sm" style="margin-left: 2px;" title="Переключить месяц/год">Месяц</button>
+        </div>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="desktop-nav">
+          <button class="nav-link active" data-tab="dashboard">Главная</button>
+          <button class="nav-link" data-tab="transactions">Операции</button>
+          <button class="nav-link" data-tab="accounts">Счета</button>
+          <button class="nav-link" data-tab="budget">Бюджет</button>
+          <button class="nav-link" data-tab="deposits">Депозиты BCC</button>
+          <button class="nav-link" data-tab="goals">Цели</button>
+          <button class="nav-link" data-tab="planning">Планирование</button>
+          <button class="nav-link" data-tab="analytics">Аналитика</button>
+          <button class="nav-link" data-tab="settings">Настройки</button>
+        </nav>
+
+        <!-- Auth and Quick Actions -->
+        <div class="d-flex align-center gap-2">
+          <button id="btn-quick-export" class="pixel-btn pixel-btn-sm" title="Быстрый экспорт JSON">💾 Экспорт</button>
+          <span id="user-auth-status" style="font-size: 12px;"></span>
+          <button id="btn-google-auth" class="pixel-btn pixel-btn-cyan pixel-btn-sm">Google Вход</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container Content -->
+    <main class="container">
+
+      <!-- ================= 1. TAB: DASHBOARD ================= -->
+      <section id="tab-dashboard" class="tab-content">
+        <!-- Warning Alerts Container -->
+        <div id="dash-alerts-container" class="alerts-container hidden"></div>
+
+        <!-- Compact 5-Card Summary Strip -->
+        <div class="compact-summary-strip">
+          <div class="compact-stat-card income">
+            <span class="compact-stat-label">Доходы за период</span>
+            <span id="dash-income" class="compact-stat-value">+0 ₸</span>
+            <span class="compact-stat-sub">Фактические поступления</span>
+          </div>
+          <div class="compact-stat-card expense">
+            <span class="compact-stat-label">Расходы за период</span>
+            <span id="dash-expense" class="compact-stat-value">-0 ₸</span>
+            <span class="compact-stat-sub">Подтверждённые траты</span>
+          </div>
+          <div class="compact-stat-card balance">
+            <span class="compact-stat-label">Остаток периода</span>
+            <span id="dash-remaining" class="compact-stat-value">0 ₸</span>
+            <span class="compact-stat-sub">Чистый денежный итог</span>
+          </div>
+          <div class="compact-stat-card free-cash">
+            <span class="compact-stat-label">Свободно до конца месяца</span>
+            <span id="dash-free-to-spend" class="compact-stat-value">0 ₸</span>
+            <span id="dash-free-sub" class="compact-stat-sub">С учётом платежей</span>
+          </div>
+          <div class="compact-stat-card net-worth">
+            <span class="compact-stat-label">Общий капитал</span>
+            <span id="dash-networth" class="compact-stat-value">0 ₸</span>
+            <span class="compact-stat-sub">На всех активных счетах</span>
+          </div>
+        </div>
+
+        <!-- Quick Actions Toolbar -->
+        <div class="quick-toolbar">
+          <div style="font-weight: 600; font-size: 13px; color: var(--text-muted);">
+            Быстрые действия:
+          </div>
+          <div class="d-flex gap-2" style="flex-wrap: wrap;">
+            <button id="btn-quick-add-tx" class="pixel-btn pixel-btn-green pixel-btn-sm">
+              <span>+</span> Новая операция
+            </button>
+            <button id="btn-quick-add-acc" class="pixel-btn pixel-btn-amber pixel-btn-sm">
+              <span>+</span> Создать счёт
+            </button>
+            <button id="btn-quick-add-rec" class="pixel-btn pixel-btn-sm">
+              <span>+</span> Регулярный платёж
+            </button>
+          </div>
+        </div>
+
+        <!-- Two Column Grid for Accounts and Goals -->
+        <div class="form-row two-col">
+          <!-- Accounts Column with Allocation & Recent Transactions -->
+          <div class="d-flex" style="flex-direction: column; gap: 16px;">
+            <div class="pixel-card" style="margin-bottom: 0;">
+              <div class="card-title">
+                <span>Деньги по счетам</span>
+                <button class="pixel-btn pixel-btn-sm" onclick="app.switchTab('accounts')">Все счета →</button>
+              </div>
+              <div id="dash-accounts-list" class="accounts-grid"></div>
+
+              <!-- Capital Allocation Mini-bar -->
+              <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase;">
+                  Распределение капитала
+                </div>
+                <div id="dash-accounts-allocation" class="allocation-bar"></div>
+                <div id="dash-allocation-legend" class="allocation-legend"></div>
+              </div>
+            </div>
+
+            <!-- Recent Transactions Widget directly on dashboard -->
+            <div class="pixel-card" style="margin-bottom: 0;">
+              <div class="card-title">
+                <span>Последние операции</span>
+                <button class="pixel-btn pixel-btn-sm" onclick="app.switchTab('transactions')">Все операции →</button>
+              </div>
+              <div id="dash-recent-transactions" class="tx-list"></div>
+            </div>
+          </div>
+
+          <!-- Goals & Upcoming Column -->
+          <div class="d-flex" style="flex-direction: column; gap: 16px;">
+            <div class="pixel-card" style="margin-bottom: 0;">
+              <div class="card-title">
+                <span>Цели накоплений</span>
+                <button class="pixel-btn pixel-btn-sm" onclick="app.switchTab('goals')">Все цели →</button>
+              </div>
+              <div id="dash-goals-list"></div>
+            </div>
+
+            <!-- Upcoming payments timeline strip -->
+            <div class="pixel-card" style="margin-bottom: 0;">
+              <div class="card-title">
+                <span>Ближайшие платежи</span>
+                <button class="pixel-btn pixel-btn-sm" onclick="app.switchTab('planning')">Календарь →</button>
+              </div>
+              <div id="dash-upcoming-payments" class="timeline-calendar"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. TAB: TRANSACTIONS ================= -->
+      <section id="tab-transactions" class="tab-content hidden">
+        <div class="pixel-card">
+          <div class="card-title">
+            <span>Журнал операций</span>
+            <button class="pixel-btn pixel-btn-green pixel-btn-sm" onclick="app.openTransactionModal()">
+              <span>+</span> Добавить операцию
+            </button>
+          </div>
+
+          <!-- Filters Bar -->
+          <div class="filter-bar">
+            <select id="filter-tx-account" class="pixel-select">
+              <option value="all">Все счета</option>
+            </select>
+            <select id="filter-tx-category" class="pixel-select">
+              <option value="all">Все категории</option>
+            </select>
+            <select id="filter-tx-status" class="pixel-select">
+              <option value="all">Любой статус</option>
+              <option value="confirmed">Только подтверждённые</option>
+              <option value="planned">Только запланированные</option>
+            </select>
+            <input type="text" id="filter-tx-search" class="pixel-input" placeholder="Поиск по заметке...">
+          </div>
+
+          <!-- Transactions list -->
+          <div id="tx-full-list" class="tx-list"></div>
+        </div>
+      </section>
+
+      <!-- ================= 3. TAB: ACCOUNTS ================= -->
+      <section id="tab-accounts" class="tab-content hidden">
+        <div class="pixel-card">
+          <div class="d-flex justify-between align-center" style="flex-wrap: wrap; gap: 10px;">
+            <div>
+              <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">
+                Общий баланс активных счетов
+              </div>
+              <div id="accounts-total-balance" class="amount-mono" style="font-size: 26px; font-weight: 700; color: #fff; margin-top: 2px;">
+                0 ₸
+              </div>
+              <div style="font-size: 12px; color: var(--text-dim);">(Исключённые из общего баланса счета не влияют на эту сумму)</div>
+            </div>
+            <button class="pixel-btn pixel-btn-amber" onclick="app.openAccountModal()">
+              <span>+</span> Создать счёт
+            </button>
+          </div>
+        </div>
+
+        <div id="accounts-full-list"></div>
+      </section>
+
+      <!-- ================= 4. TAB: BUDGET & LIMITS ================= -->
+      <section id="tab-budget" class="tab-content hidden">
+        <!-- Monthly Total Limit Card -->
+        <div class="pixel-card">
+          <div class="card-title">
+            <span>Общий месячный лимит расходов</span>
+            <span class="tag amount-mono" id="budget-total-percent">0%</span>
+          </div>
+
+          <div class="pixel-progress-wrap">
+            <div class="pixel-progress">
+              <div id="budget-total-progress-bar" class="pixel-progress-bar" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-between align-center amount-mono" style="font-size: 13px; margin-top: 6px;">
+            <span>Потрачено: <strong id="budget-total-spent" class="text-red">0 ₸</strong></span>
+            <span>Установленный лимит: <strong id="budget-total-limit-display" class="text-amber">0 ₸</strong></span>
+          </div>
+
+          <div class="d-flex align-center gap-2 mt-4" style="flex-wrap: wrap;">
+            <input type="number" id="input-total-monthly-limit" class="pixel-input amount-mono" step="any" placeholder="Задать общий лимит на месяц в ₸" style="max-width: 260px;">
+            <button id="btn-save-total-limit" class="pixel-btn pixel-btn-amber pixel-btn-sm">Сохранить лимит</button>
+          </div>
+        </div>
+
+        <!-- Category Limits Breakdown -->
+        <div class="pixel-card">
+          <div class="card-title">
+            <span>Лимиты по категориям</span>
+            <span class="tag">Контроль трат</span>
+          </div>
+          <div id="budget-limits-list"></div>
+        </div>
+      </section>
+
+      <!-- ================= 5. TAB: BCC DEPOSITS ================= -->
+      <section id="tab-deposits" class="tab-content hidden">
+        <div class="pixel-card">
+          <div class="d-flex justify-between align-center" style="flex-wrap: wrap; gap: 10px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 700; color: #fff;">
+                Депозиты Банка ЦентрКредит (BCC)
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                Официальные модели вкладов «Моя цель» (16.7% / 18.06% ГЭСВ) и «Чемпион» (14.2% / 15.17% ГЭСВ)
+              </div>
+            </div>
+            <button class="pixel-btn pixel-btn-amber" onclick="app.openDepositModal()">
+              <span>+</span> Открыть вклад BCC
+            </button>
+          </div>
+        </div>
+
+        <div id="deposits-cards-container"></div>
+      </section>
+
+      <!-- ================= 6. TAB: SAVINGS GOALS ================= -->
+      <section id="tab-goals" class="tab-content hidden">
+        <div class="pixel-card">
+          <div class="d-flex justify-between align-center" style="flex-wrap: wrap; gap: 10px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 700; color: #fff;">
+                Финансовые цели
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                Отслеживайте накопления с привязкой к одному или нескольким счетам и депозитам
+              </div>
+            </div>
+            <button class="pixel-btn pixel-btn-amber" onclick="app.openGoalModal()">
+              <span>+</span> Новая цель
+            </button>
+          </div>
+        </div>
+
+        <div id="goals-cards-container" class="goals-grid"></div>
+      </section>
+
+      <!-- ================= 7. TAB: PLANNING (КАЛЕНДАРЬ, РЕГУЛЯРНЫЕ, ЖУРНАЛ) ================= -->
+      <section id="tab-planning" class="tab-content hidden">
+        <div class="sub-tabs-bar">
+          <button class="sub-tab-btn active" data-subtab="calendar">📅 Календарь платежей</button>
+          <button class="sub-tab-btn" data-subtab="recurring">🔄 Регулярные операции</button>
+          <button class="sub-tab-btn" data-subtab="activity">📜 Журнал действий</button>
+        </div>
+
+        <!-- Subtab 1: Calendar View -->
+        <div id="subtab-view-calendar" class="planning-subview">
+          <div class="compact-summary-strip">
+            <div class="compact-stat-card expense">
+              <span class="compact-stat-label">Нужно в ближайшие 7 дней</span>
+              <span id="calc-need-7d" class="compact-stat-value">0 ₸</span>
+              <span class="compact-stat-sub">Обязательные платежи</span>
+            </div>
+            <div class="compact-stat-card balance">
+              <span class="compact-stat-label">Нужно в ближайшие 30 дней</span>
+              <span id="calc-need-30d" class="compact-stat-value">0 ₸</span>
+              <span class="compact-stat-sub">Сумма всех расходов месяца</span>
+            </div>
+          </div>
+
+          <div class="pixel-card">
+            <div class="card-title">
+              <span>График предстоящих платежей</span>
+              <span class="tag">Календарь</span>
+            </div>
+            <div id="calendar-timeline-container" class="timeline-calendar"></div>
+          </div>
+        </div>
+
+        <!-- Subtab 2: Recurring Operations View -->
+        <div id="subtab-view-recurring" class="planning-subview hidden">
+          <div class="pixel-card">
+            <div class="d-flex justify-between align-center" style="flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="font-size: 15px; font-weight: 700; color: #fff;">
+                  Регулярные операции
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                  Зарплата, аренда, стипендия, подписки (Яндекс, Spotify) и коммунальные платежи
+                </div>
+              </div>
+              <button class="pixel-btn pixel-btn-amber" onclick="app.openRecurringModal()">
+                <span>+</span> Добавить платёж
+              </button>
+            </div>
+          </div>
+
+          <div class="pixel-card">
+            <div id="recurring-list-container" class="tx-list"></div>
+          </div>
+        </div>
+
+        <!-- Subtab 3: Activity Log View -->
+        <div id="subtab-view-activity" class="planning-subview hidden">
+          <div class="pixel-card">
+            <div class="card-title">
+              <span>Журнал действий и изменений</span>
+              <span class="tag">Аудит</span>
+            </div>
+            <div id="activity-log-container" class="tx-list" style="max-height: 65vh; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 8. TAB: ANALYTICS ================= -->
+      <section id="tab-analytics" class="tab-content hidden">
+        <!-- Month-over-Month Difference Box -->
+        <div class="pixel-card mb-4">
+          <div class="card-title">
+            <span>Сравнение текущего месяца с прошлым</span>
+            <span class="tag">Динамика</span>
+          </div>
+          <div id="analytics-month-diff-box"></div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid mb-4">
+          <!-- Category Doughnut Chart -->
+          <div class="pixel-card">
+            <div class="card-title">
+              <span>Расходы по категориям</span>
+              <span class="tag">Структура</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="chart-categories-pie"></canvas>
+            </div>
+            <div id="chart-categories-legend" class="chart-legend"></div>
+          </div>
+
+          <!-- Monthly Bar Chart -->
+          <div class="pixel-card">
+            <div class="card-title">
+              <span>Доходы и расходы за 6 месяцев</span>
+              <span class="tag">Тренды</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="chart-monthly-bars"></canvas>
+            </div>
+            <div class="chart-legend" style="justify-content: center;">
+              <div class="legend-item"><span class="legend-color-box" style="background:#10b981;"></span> Доходы</div>
+              <div class="legend-item"><span class="legend-color-box" style="background:#ef4444;"></span> Расходы</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 9. TAB: SETTINGS & BACKUP ================= -->
+      <section id="tab-settings" class="tab-content hidden">
+        <!-- Backup & Restore -->
+        <div class="pixel-card">
+          <div class="card-title">
+            <span>Резервное копирование и экспорт (JSON)</span>
+            <span class="tag">Безопасность</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Все финансовые записи хранятся локально в браузере. Вы можете в любой момент выгрузить полный файл данных или восстановить его на другом устройстве.
+          </p>
+          <div class="d-flex gap-2" style="flex-wrap: wrap;">
+            <button id="btn-export-json" class="pixel-btn pixel-btn-amber">
+              💾 Экспорт данных (JSON)
+            </button>
+            <button id="btn-import-json" class="pixel-btn">
+              📂 Импорт из JSON
+            </button>
+            <input type="file" id="input-import-json" accept=".json" class="hidden">
+          </div>
+        </div>
+
+        <!-- Categories Customization -->
+        <div class="pixel-card">
+          <div class="card-title">
+            <span>Управление категориями</span>
+            <span class="tag">Категории</span>
+          </div>
+
+          <form id="form-add-category" class="d-flex gap-2 mb-4" style="flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 2; min-width: 140px;">
+              <label class="form-label">Название категории</label>
+              <input type="text" id="cat-input-name" class="pixel-input" placeholder="Например: Кафе" required>
+            </div>
+            <div style="flex: 1; min-width: 70px;">
+              <label class="form-label">Иконка</label>
+              <input type="text" id="cat-input-icon" class="pixel-input" value="☕" style="text-align: center;">
+            </div>
+            <div style="flex: 1; min-width: 110px;">
+              <label class="form-label">Тип</label>
+              <select id="cat-input-type" class="pixel-select">
+                <option value="expense">Расход</option>
+                <option value="income">Доход</option>
+              </select>
+            </div>
+            <div style="width: 44px;">
+              <label class="form-label">Цвет</label>
+              <input type="color" id="cat-input-color" value="#f59e0b" style="height: 36px; width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: transparent; cursor: pointer;">
+            </div>
+            <button type="submit" class="pixel-btn pixel-btn-amber pixel-btn-sm" style="height: 36px;">+ Добавить</button>
+          </form>
+
+          <div id="settings-categories-list" class="tx-list"></div>
+        </div>
+
+        <!-- Firebase Cloud Sync Config -->
+        <div class="pixel-card">
+          <div class="card-title">
+            <span>Облачная синхронизация Firebase</span>
+            <span class="tag">Google Cloud</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+            Вставьте JSON-конфиг вашего бесплатного проекта Firebase для синхронизации между ноутбуком и телефоном через Google Auth:
+          </p>
+          <textarea id="firebase-config-json" class="pixel-textarea amount-mono" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "..." }'></textarea>
+          <div class="mt-2 text-right">
+            <button id="btn-save-firebase-cfg" class="pixel-btn pixel-btn-sm">Сохранить конфигурацию</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation (Strictly 5 items: Главная, Операции, Счета, Бюджет, Ещё) -->
+    <nav class="mobile-nav">
+      <button class="mobile-nav-btn active" data-tab="dashboard">
+        <span class="icon">📊</span>
+        <span>Главная</span>
+      </button>
+      <button class="mobile-nav-btn" data-tab="transactions">
+        <span class="icon">🧾</span>
+        <span>Операции</span>
+      </button>
+      <button class="mobile-nav-btn" data-tab="accounts">
+        <span class="icon">💳</span>
+        <span>Счета</span>
+      </button>
+      <button class="mobile-nav-btn" data-tab="budget">
+        <span class="icon">⚖️</span>
+        <span>Бюджет</span>
+      </button>
+      <button class="mobile-nav-btn" data-tab="more">
+        <span class="icon">☰</span>
+        <span>Ещё</span>
+      </button>
+    </nav>
+
+    <!-- Mobile Bottom Sheet ("Ещё") -->
+    <div id="more-sheet" class="more-sheet">
+      <div class="more-sheet-content">
+        <div class="d-flex justify-between align-center" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+          <span style="font-weight: 700; font-size: 15px;">Разделы приложения</span>
+          <button class="pixel-btn pixel-btn-sm" onclick="document.getElementById('more-sheet').classList.remove('active')">✕</button>
+        </div>
+        <div class="more-nav-grid">
+          <div class="more-nav-item" data-tab="deposits">
+            <span>🏦</span> <span>Депозиты BCC</span>
+          </div>
+          <div class="more-nav-item" data-tab="goals">
+            <span>🎯</span> <span>Цели накоплений</span>
+          </div>
+          <div class="more-nav-item" data-tab="planning" data-subtab="calendar">
+            <span>📅</span> <span>Календарь</span>
+          </div>
+          <div class="more-nav-item" data-tab="planning" data-subtab="recurring">
+            <span>🔄</span> <span>Регулярные</span>
+          </div>
+          <div class="more-nav-item" data-tab="analytics">
+            <span>📈</span> <span>Аналитика</span>
+          </div>
+          <div class="more-nav-item" data-tab="planning" data-subtab="activity">
+            <span>📜</span> <span>Журнал действий</span>
+          </div>
+          <div class="more-nav-item" data-tab="settings">
+            <span>⚙️</span> <span>Настройки и экспорт</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 1. Transaction Modal -->
+    <div id="modal-transaction" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span id="modal-tx-title" class="modal-title">Новая операция</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <form id="form-transaction">
+          <div id="tx-type-group" class="type-toggle-group">
+            <div class="type-toggle-btn active expense" data-type="expense">Расход</div>
+            <div class="type-toggle-btn" data-type="income">Доход</div>
+            <div class="type-toggle-btn" data-type="transfer">Перевод</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Сумма в тенге (₸)</label>
+            <input type="number" id="tx-input-amount" class="pixel-input amount-mono" placeholder="0" step="any" required>
+          </div>
+
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Счёт списания</label>
+              <select id="tx-input-account" class="pixel-select"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Дата операции</label>
+              <input type="date" id="tx-input-date" class="pixel-input" required>
+            </div>
+          </div>
+
+          <div id="tx-row-to-account" class="form-group hidden">
+            <label class="form-label">Счёт зачисления (получатель)</label>
+            <select id="tx-input-to-account" class="pixel-select"></select>
+          </div>
+
+          <div id="tx-row-category" class="form-group">
+            <label class="form-label">Категория</label>
+            <select id="tx-input-category" class="pixel-select"></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Статус операции</label>
+            <select id="tx-input-status" class="pixel-select">
+              <option value="confirmed">Подтверждена (списано/зачислено)</option>
+              <option value="planned">Запланирована (будущий платёж)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Заметка / комментарий</label>
+            <input type="text" id="tx-input-note" class="pixel-input" placeholder="Например: Супермаркет, Зарплата...">
+          </div>
+
+          <div class="mt-4 d-flex justify-between">
+            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+            <button type="submit" class="pixel-btn pixel-btn-green">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2. Account Modal -->
+    <div id="modal-account" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span id="modal-acc-title" class="modal-title">Новый счёт</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <form id="form-account">
+          <div class="form-group">
+            <label class="form-label">Название счёта</label>
+            <input type="text" id="acc-input-name" class="pixel-input" placeholder="Например: Kaspi Gold, Halyk, Наличные..." required>
+          </div>
+
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Тип счёта</label>
+              <select id="acc-input-type" class="pixel-select">
+                <option value="card">Банковская карта</option>
+                <option value="cash">Наличные</option>
+                <option value="savings">Накопительный счёт</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Иконка</label>
+              <input type="text" id="acc-input-icon" class="pixel-input" value="💳" style="text-align: center;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Начальный баланс (₸)</label>
+            <input type="number" id="acc-input-balance" class="pixel-input amount-mono" value="0" step="any">
+          </div>
+
+          <div class="d-flex align-center gap-2 mt-2" style="font-size: 13px;">
+            <input type="checkbox" id="acc-input-exclude" style="width: 16px; height: 16px; accent-color: var(--accent-amber);">
+            <label for="acc-input-exclude">Исключить этот счёт из общего баланса</label>
+          </div>
+
+          <div class="mt-4 d-flex justify-between">
+            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+            <button type="submit" class="pixel-btn pixel-btn-amber">Сохранить счёт</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 3. BCC Deposit Modal -->
+    <div id="modal-deposit" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span id="modal-deposit-title" class="modal-title">Параметры депозита BCC</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <form id="form-deposit-config">
+          <div class="form-group">
+            <label class="form-label">Тип вклада BCC</label>
+            <select id="dep-input-type" class="pixel-select">
+              <option value="my_goal">«Моя цель» (3 мес. / 16.7% ном. / 18.06% ГЭСВ / без снятий)</option>
+              <option value="champion">«Чемпион» (6 мес. / 14.2% ном. / 15.17% ГЭСВ / со снятиями)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Название вклада</label>
+            <input type="text" id="dep-input-name" class="pixel-input" required>
+          </div>
+
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Начальная сумма (₸)</label>
+              <input type="number" id="dep-input-amount" class="pixel-input amount-mono" step="any" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Срок (в месяцах)</label>
+              <input type="number" id="dep-input-term" class="pixel-input" min="1" max="60" required>
+            </div>
+          </div>
+
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Номинальная ставка (%)</label>
+              <input type="number" id="dep-input-nom-rate" class="pixel-input amount-mono" step="any" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ГЭСВ (%)</label>
+              <input type="number" id="dep-input-eff-rate" class="pixel-input amount-mono" step="any" required>
+            </div>
+          </div>
+
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Дата открытия</label>
+              <input type="date" id="dep-input-start-date" class="pixel-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Плановое пополнение (₸/мес)</label>
+              <input type="number" id="dep-input-topup" class="pixel-input amount-mono" step="any" placeholder="0">
+            </div>
+          </div>
+
+          <div class="disclaimer-box">
+            Ставки можно вручную изменить, если BCC скорректирует условия. Проценты рассчитываются как прогноз.
+          </div>
+
+          <div class="mt-4 d-flex justify-between">
+            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+            <button type="button" id="btn-save-bcc-deposit" class="pixel-btn pixel-btn-amber">Сохранить вклад</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 4. Accrue Interest Modal (Зачислить проценты) -->
+    <div id="modal-deposit-interest" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span class="modal-title">Зачисление процентов BCC</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          Поскольку приложение не подключается напрямую к банковскому API, вознаграждение зачисляется вручную по рассчитанному прогнозу банка:
+        </p>
+        <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 14px; font-size: 13px;">
+          <div>Депозит: <strong id="interest-modal-dep-name" style="color: #fff;">—</strong></div>
+          <div>Текущий остаток: <strong id="interest-modal-balance" class="amount-mono">—</strong></div>
+          <div>Ставка: <strong id="interest-modal-rate">—</strong></div>
+        </div>
+
+        <input type="hidden" id="interest-modal-dep-id">
+
+        <div class="form-group">
+          <label class="form-label">Сумма вознаграждения к зачислению (₸)</label>
+          <input type="number" id="interest-input-amount" class="pixel-input amount-mono" step="any" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Дата начисления</label>
+          <input type="date" id="interest-input-date" class="pixel-input" required>
+        </div>
+
+        <div class="mt-4 d-flex justify-between">
+          <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+          <button type="button" id="btn-confirm-accrue-interest" class="pixel-btn pixel-btn-green">✓ Зачислить на депозит</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Goals Modal (Supports MULTI-ACCOUNT) -->
+    <div id="modal-goal" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span id="modal-goal-title" class="modal-title">Цель накоплений</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <form id="form-goal">
+          <div class="form-group">
+            <label class="form-label">Название цели</label>
+            <input type="text" id="goal-input-name" class="pixel-input" placeholder="Например: Ноутбук — 500 000 ₸" required>
+          </div>
+
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Целевая сумма (₸)</label>
+              <input type="number" id="goal-input-target" class="pixel-input amount-mono" step="any" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Срок достижения (дедлайн)</label>
+              <input type="date" id="goal-input-date" class="pixel-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Привязать счета или депозиты (можно несколько)</label>
+            <div id="goal-accounts-checklist" class="goal-accounts-checklist"></div>
+            <span style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Сумма на всех выбранных счетах будет автоматически учитываться в прогрессе цели</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Или задать накопленную сумму вручную (₸)</label>
+            <input type="number" id="goal-input-current" class="pixel-input amount-mono" step="any" value="0">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Описание / комментарий</label>
+            <input type="text" id="goal-input-desc" class="pixel-input" placeholder="Зачем вы копите на эту цель...">
+          </div>
+
+          <div class="mt-4 d-flex justify-between">
+            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+            <button type="submit" class="pixel-btn pixel-btn-amber">Сохранить цель</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 6. Recurring Payment Modal -->
+    <div id="modal-recurring" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span id="modal-recurring-title" class="modal-title">Регулярный платёж</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <form id="form-recurring">
+          <div class="form-group">
+            <label class="form-label">Название платежа</label>
+            <input type="text" id="rec-input-name" class="pixel-input" placeholder="Например: Аренда, Зарплата, Яндекс Плюс..." required>
+          </div>
+
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Сумма в тенге (₸)</label>
+              <input type="number" id="rec-input-amount" class="pixel-input amount-mono" step="any" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Тип</label>
+              <select id="rec-input-type" class="pixel-select">
+                <option value="expense">Расход</option>
+                <option value="income">Доход</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Счёт списания / зачисления</label>
+              <select id="rec-input-account" class="pixel-select"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">День месяца (1-31)</label>
+              <input type="number" id="rec-input-day" class="pixel-input amount-mono" min="1" max="31" value="10" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Категория</label>
+            <select id="rec-input-category" class="pixel-select"></select>
+          </div>
+
+          <div class="mt-4 d-flex justify-between">
+            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+            <button type="submit" class="pixel-btn pixel-btn-amber">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 7. Confirm Action / Delete Modal -->
+    <div id="modal-confirm-action" class="modal-overlay">
+      <div class="modal-box" style="max-width: 420px;">
+        <div class="modal-header">
+          <span id="modal-confirm-title" class="modal-title">Подтверждение</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <p id="modal-confirm-desc" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          Вы уверены, что хотите выполнить это действие?
+        </p>
+        <div class="d-flex justify-between">
+          <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+          <button type="button" id="btn-confirm-proceed" class="pixel-btn pixel-btn-red pixel-btn-sm">Да, подтверждаю</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Deposit Schedule Modal -->
+    <div id="modal-dep-schedule" class="modal-overlay">
+      <div class="modal-box" style="max-width: 560px;">
+        <div class="modal-header">
+          <span id="modal-dep-schedule-title" class="modal-title">Прогноз дохода</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <div id="modal-dep-schedule-body"></div>
+      </div>
+    </div>
+
+    <!-- 9. Account History Modal -->
+    <div id="modal-acc-history" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span id="modal-acc-history-title" class="modal-title">История операций</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <div id="modal-acc-history-list" class="tx-list" style="max-height: 60vh; overflow-y: auto;"></div>
+      </div>
+    </div>
+
+    <!-- 10. Firebase Config Modal -->
+    <div id="modal-firebase-settings" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span class="modal-title">Вход через Google / Firebase</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+          Введите конфигурацию вашего Firebase проекта для синхронизации между устройствами:
+        </p>
+        <textarea id="modal-fb-config-text" class="pixel-textarea amount-mono" rows="6" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "..." }'></textarea>
+        <div class="mt-4 d-flex justify-between">
+          <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+          <button type="button" id="btn-modal-save-firebase" class="pixel-btn pixel-btn-amber">Сохранить и войти</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Application Modules -->
+  <script type="module" src="./js/bcc-deposits.js"></script>
+  <script type="module" src="./js/analytics.js"></script>
+  <script type="module" src="./js/firebase-config.js"></script>
+  <script type="module" src="./js/app.js"></script>
+
+  <!-- Wire Inline Deposit Save -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('btn-save-bcc-deposit')?.addEventListener('click', () => {
+        const app = window.app;
+        if (!app) return;
+
+        const subType = document.getElementById('dep-input-type').value;
+        const name = document.getElementById('dep-input-name').value.trim();
+        const initialBalance = parseFloat(document.getElementById('dep-input-amount').value) || 0;
+        const termMonths = parseInt(document.getElementById('dep-input-term').value, 10) || 3;
+        const nominalRate = parseFloat(document.getElementById('dep-input-nom-rate').value) || 16.7;
+        const effectiveRate = parseFloat(document.getElementById('dep-input-eff-rate').value) || 18.06;
+        const startDate = document.getElementById('dep-input-start-date').value;
+        const monthlyTopUp = parseFloat(document.getElementById('dep-input-topup').value) || 0;
+
+        if (!name) {
+          app.showToast('Введите название депозита!', 'error');
+          return;
+        }
+
+        const isChampion = subType === 'champion';
+
+        if (app.editingAccountId) {
+          const idx = app.state.accounts.findIndex((a) => a.id === app.editingAccountId);
+          if (idx !== -1) {
+            app.state.accounts[idx] = {
+              ...app.state.accounts[idx],
+              name,
+              subType,
+              initialBalance,
+              termMonths,
+              nominalRate,
+              effectiveRate,
+              startDate,
+              monthlyTopUp,
+              allowsWithdrawal: isChampion,
+              minBalance: isChampion ? 1000 : 0
+            };
+            app.logActivity(`Обновлены параметры депозита BCC: ${name}`);
+            app.showToast('Параметры вклада BCC обновлены', 'success');
+          }
+        } else {
+          const newDep = {
+            id: 'acc_dep_' + Date.now(),
+            name,
+            type: 'deposit',
+            isBCC: true,
+            subType,
+            currency: '₸',
+            icon: isChampion ? '🏆' : '🏦',
+            initialBalance,
+            excludeFromTotal: false,
+            termMonths,
+            nominalRate,
+            effectiveRate,
+            startDate,
+            monthlyTopUp,
+            allowsWithdrawal: isChampion,
+            minBalance: isChampion ? 1000 : 0
+          };
+          app.state.accounts.push(newDep);
+          app.logActivity(`Открыт новый вклад BCC: ${name}`);
+          app.showToast('Вклад BCC успешно добавлен', 'success');
+        }
+
+        app.saveState();
+        app.closeModal('modal-deposit');
+        app.render();
+      });
+
+      document.getElementById('btn-modal-save-firebase')?.addEventListener('click', async () => {
+        const app = window.app;
+        const raw = document.getElementById('modal-fb-config-text')?.value.trim();
+        if (!raw) {
+          app?.showToast('Введите JSON конфигурацию!', 'error');
+          return;
+        }
+        try {
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js');
+          const cfg = parseFirebaseConfigInput(raw);
+          saveFirebaseConfig(cfg);
+          await initFirebase(cfg);
+          app?.closeModal('modal-firebase-settings');
+          app?.showToast('Конфигурация сохранена! Выполняется вход...', 'info');
+          await loginWithGoogle();
+          app?.showToast('Успешный вход через Google!', 'success');
+        } catch (err) {
+          app?.showToast(`Ошибка: ${err.message}`, 'error');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
