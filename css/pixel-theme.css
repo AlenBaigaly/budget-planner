@@ -1249,18 +1249,8 @@ html, body {
 .peak-row.expense strong { color: var(--accent-red); }
 .peak-row.income strong { color: var(--accent-green); }
 
-.daily-chart-scroll {
-  overflow-x: auto;
-  scrollbar-color: var(--border-light) transparent;
-}
-
-.daily-chart-wrapper {
-  min-width: 920px;
-}
-
 @media (max-width: 560px) {
   .peaks-summary, .peaks-lists { grid-template-columns: 1fr; }
-  .daily-chart-wrapper { min-width: 850px; }
 }
 
 /* Multi-select account list for goals */

@@ -413,21 +413,6 @@
           <div id="analytics-peaks" class="analytics-peaks"></div>
         </div>
 
-        <div class="pixel-card mt-4">
-          <div class="card-title">
-            <span id="analytics-daily-chart-title">Доходы и расходы по дням</span>
-            <span class="tag">Текущий месяц</span>
-          </div>
-          <div class="daily-chart-scroll">
-            <div class="chart-wrapper daily-chart-wrapper">
-              <canvas id="chart-daily-bars"></canvas>
-            </div>
-          </div>
-          <div class="chart-legend" style="justify-content: center;">
-            <div class="legend-item"><span class="legend-color-box" style="background:#10b981;"></span> Доходы</div>
-            <div class="legend-item"><span class="legend-color-box" style="background:#ef4444;"></span> Расходы</div>
-          </div>
-        </div>
       </section>
 
       <!-- ================= 9. TAB: SETTINGS & BACKUP ================= -->
@@ -932,10 +917,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=14"></script>
-  <script type="module" src="./js/analytics.js?v=14"></script>
-  <script type="module" src="./js/firebase-config.js?v=14"></script>
-  <script type="module" src="./js/app.js?v=14"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=15"></script>
+  <script type="module" src="./js/analytics.js?v=15"></script>
+  <script type="module" src="./js/firebase-config.js?v=15"></script>
+  <script type="module" src="./js/app.js?v=15"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1016,7 +1001,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=14');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=15');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
