@@ -2621,6 +2621,72 @@ class BudgetApp {
 
     drawPixelBarChart(barCanvas, monthsData);
 
+    // Detailed chronological cash flow for the month selected in the header.
+    const selectedYear = this.state.settings.selectedYear;
+    const selectedMonth = this.state.settings.selectedMonth;
+    const monthNamesFull = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+    const flowTitle = document.getElementById('analytics-monthly-flow-title');
+    const flowSummary = document.getElementById('analytics-monthly-flow-summary');
+    const flowContainer = document.getElementById('analytics-monthly-flow');
+    const monthlyFlow = this.state.transactions
+      .filter((tx) => {
+        const [year, month] = (tx.date || '').split('-').map(Number);
+        return year === selectedYear && month === selectedMonth && (tx.type === 'income' || tx.type === 'expense');
+      })
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+    const actualIncome = monthlyFlow
+      .filter((tx) => tx.type === 'income' && tx.status !== 'planned')
+      .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+    const actualExpense = monthlyFlow
+      .filter((tx) => tx.type === 'expense' && tx.status !== 'planned')
+      .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+
+    if (flowTitle) flowTitle.textContent = `Доходы и расходы — ${monthNamesFull[selectedMonth - 1]} ${selectedYear}`;
+    if (flowSummary) {
+      flowSummary.innerHTML = `
+        <div class="analytics-flow-total income"><span>Доходы</span><strong class="amount-mono">+${actualIncome.toLocaleString('ru-RU')} ₸</strong></div>
+        <div class="analytics-flow-total expense"><span>Расходы</span><strong class="amount-mono">-${actualExpense.toLocaleString('ru-RU')} ₸</strong></div>
+        <div class="analytics-flow-total balance"><span>Итог</span><strong class="amount-mono">${actualIncome - actualExpense >= 0 ? '+' : ''}${(actualIncome - actualExpense).toLocaleString('ru-RU')} ₸</strong></div>
+      `;
+    }
+
+    if (flowContainer) {
+      if (!monthlyFlow.length) {
+        flowContainer.innerHTML = '<div class="text-dim text-center" style="padding: 20px;">Нет доходов и расходов за выбранный месяц.</div>';
+      } else {
+        const byDate = monthlyFlow.reduce((groups, tx) => {
+          (groups[tx.date] ||= []).push(tx);
+          return groups;
+        }, {});
+        flowContainer.innerHTML = Object.entries(byDate).map(([date, txs]) => {
+          const readableDate = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+          return `
+            <div class="analytics-flow-day">
+              <div class="analytics-flow-date">${readableDate}</div>
+              <div class="analytics-flow-items">
+                ${txs.map((tx) => {
+                  const category = this.state.categories.find((cat) => cat.id === tx.categoryId);
+                  const isIncome = tx.type === 'income';
+                  const isPlanned = tx.status === 'planned';
+                  return `
+                    <div class="analytics-flow-item ${isIncome ? 'income' : 'expense'} ${isPlanned ? 'planned' : ''}">
+                      <div class="analytics-flow-name">
+                        <span>${category?.icon || (isIncome ? '💰' : '🧾')}</span>
+                        <span>${tx.name || category?.name || (isIncome ? 'Доход' : 'Расход')}</span>
+                        ${isPlanned ? '<span class="status-badge planned">План</span>' : ''}
+                      </div>
+                      <strong class="amount-mono">${isIncome ? '+' : '-'}${Number(tx.amount || 0).toLocaleString('ru-RU')} ₸</strong>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
     // Month over Month comparison
     const curYear = this.state.settings.selectedYear;
     const curMonth = this.state.settings.selectedMonth;

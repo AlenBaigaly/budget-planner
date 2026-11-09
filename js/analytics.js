@@ -49,16 +49,27 @@ export function drawPixelPieChart(canvas, dataItems) {
   const radius = Math.min(centerX, centerY) - 22;
   const innerRadius = radius * 0.58;
 
-  let startAngle = -Math.PI / 2;
+  const sliceMeta = [];
+  let activeIndex = -1;
 
-  dataItems.forEach((item, index) => {
+  const drawChart = () => {
+    ctx.clearRect(0, 0, width, height);
+    let startAngle = -Math.PI / 2;
+
+    dataItems.forEach((item, index) => {
     const sliceAngle = (item.value / total) * 2 * Math.PI;
     const endAngle = startAngle + sliceAngle;
     const color = item.color || MODERN_PALETTE[index % MODERN_PALETTE.length];
+    const isActive = index === activeIndex;
+    const middleAngle = startAngle + sliceAngle / 2;
+    const popOut = isActive ? 8 : 0;
+    const outerRadius = radius + (isActive ? 5 : 0);
+    const offsetX = Math.cos(middleAngle) * popOut;
+    const offsetY = Math.sin(middleAngle) * popOut;
 
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-    ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+    ctx.arc(centerX + offsetX, centerY + offsetY, outerRadius, startAngle, endAngle);
+    ctx.arc(centerX + offsetX, centerY + offsetY, innerRadius, endAngle, startAngle, true);
     ctx.closePath();
 
     ctx.fillStyle = color;
@@ -69,28 +80,65 @@ export function drawPixelPieChart(canvas, dataItems) {
     ctx.strokeStyle = '#0e1118';
     ctx.stroke();
 
+    sliceMeta[index] = { startAngle, endAngle };
+
     startAngle = endAngle;
-  });
+    });
 
-  // Center cutout circle
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, innerRadius - 1, 0, Math.PI * 2);
-  ctx.fillStyle = '#121620';
-  ctx.fill();
-  ctx.strokeStyle = '#212638';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+    // Center cutout circle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, innerRadius - 1, 0, Math.PI * 2);
+    ctx.fillStyle = '#121620';
+    ctx.fill();
+    ctx.strokeStyle = '#212638';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
-  // Center text
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '600 11px Inter, -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('ВСЕГО ТРАТ', centerX, centerY - 8);
+    // Center text changes to the highlighted category.
+    const activeItem = dataItems[activeIndex];
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 11px Inter, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(activeItem ? activeItem.label.toUpperCase().slice(0, 18) : 'ВСЕГО ТРАТ', centerX, centerY - 8);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '700 16px Inter, -apple-system, sans-serif';
-  const totalStr = total > 999999 ? `${(total / 1000000).toFixed(2)} млн ₸` : `${Math.round(total).toLocaleString('ru-RU')} ₸`;
-  ctx.fillText(totalStr, centerX, centerY + 14);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 16px Inter, -apple-system, sans-serif';
+    const shownValue = activeItem ? activeItem.value : total;
+    const totalStr = shownValue > 999999 ? `${(shownValue / 1000000).toFixed(2)} млн ₸` : `${Math.round(shownValue).toLocaleString('ru-RU')} ₸`;
+    ctx.fillText(totalStr, centerX, centerY + 14);
+  };
+
+  const findSlice = (event) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left - centerX;
+    const y = event.clientY - rect.top - centerY;
+    const distance = Math.hypot(x, y);
+    if (distance < innerRadius || distance > radius + 14) return -1;
+
+    let angle = Math.atan2(y, x);
+    if (angle < -Math.PI / 2) angle += Math.PI * 2;
+    return sliceMeta.findIndex(({ startAngle, endAngle }) => angle >= startAngle && angle <= endAngle);
+  };
+
+  canvas.onmousemove = (event) => {
+    const nextActiveIndex = findSlice(event);
+    if (nextActiveIndex === activeIndex) return;
+    activeIndex = nextActiveIndex;
+    canvas.style.cursor = activeIndex >= 0 ? 'pointer' : 'default';
+    const item = dataItems[activeIndex];
+    canvas.title = item ? `${item.label}: ${Number(item.value).toLocaleString('ru-RU')} ₸` : '';
+    drawChart();
+  };
+
+  canvas.onmouseleave = () => {
+    if (activeIndex < 0) return;
+    activeIndex = -1;
+    canvas.style.cursor = 'default';
+    canvas.title = '';
+    drawChart();
+  };
+
+  drawChart();
 }
 
 /**

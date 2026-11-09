@@ -1211,6 +1211,73 @@ html, body {
   border-radius: 2px;
 }
 
+.analytics-flow-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.analytics-flow-total {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-subtle);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.analytics-flow-total strong { font-size: 14px; }
+.analytics-flow-total.income strong { color: var(--accent-green); }
+.analytics-flow-total.expense strong { color: var(--accent-red); }
+.analytics-flow-total.balance strong { color: var(--accent-cyan); }
+
+.analytics-flow-list { display: grid; gap: 10px; }
+
+.analytics-flow-day {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.analytics-flow-date {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.analytics-flow-items { display: grid; gap: 6px; }
+
+.analytics-flow-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent-red);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-subtle);
+  font-size: 13px;
+}
+
+.analytics-flow-item.income { border-left-color: var(--accent-green); }
+.analytics-flow-item.expense strong { color: var(--accent-red); }
+.analytics-flow-item.income strong { color: var(--accent-green); }
+.analytics-flow-item.planned { opacity: .72; }
+.analytics-flow-name { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.analytics-flow-name > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 560px) {
+  .analytics-flow-summary { grid-template-columns: 1fr; }
+  .analytics-flow-day { grid-template-columns: 1fr; gap: 6px; }
+}
+
 /* Multi-select account list for goals */
 .goal-accounts-checklist {
   display: flex;
