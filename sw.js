@@ -1,4 +1,4 @@
-const CACHE_NAME = 'budget-planner-v11';
+const CACHE_NAME = 'budget-planner-v12';
 const ASSETS = [
   './',
   './index.html',

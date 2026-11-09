@@ -2637,6 +2637,8 @@ class BudgetApp {
     const selectedMonth = this.state.settings.selectedMonth;
     const peaksTitle = document.getElementById('analytics-peaks-title');
     const peaksContainer = document.getElementById('analytics-peaks');
+    const dailyCanvas = document.getElementById('chart-daily-bars');
+    const dailyChartTitle = document.getElementById('analytics-daily-chart-title');
     const monthlyFlow = this.state.transactions
       .filter((tx) => {
         const [year, month] = (tx.date || '').split('-').map(Number);
@@ -2689,6 +2691,22 @@ class BudgetApp {
         </div>
       `;
     }
+
+    // A full-width daily chart keeps every date visible. On a phone this area scrolls horizontally.
+    if (dailyCanvas) {
+      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+      const dailyData = Array.from({ length: daysInMonth }, (_, index) => {
+        const day = index + 1;
+        const dayTxs = monthlyFlow.filter((tx) => Number((tx.date || '').split('-')[2]) === day);
+        return {
+          label: String(day),
+          income: dayTxs.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0),
+          expense: dayTxs.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+        };
+      });
+      drawPixelBarChart(dailyCanvas, dailyData);
+    }
+    if (dailyChartTitle) dailyChartTitle.textContent = `Доходы и расходы по дням — ${monthNamesFull[selectedMonth - 1]} ${selectedYear}`;
 
     // Month over Month comparison
     const curYear = this.state.settings.selectedYear;
