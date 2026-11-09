@@ -1211,14 +1211,15 @@ html, body {
   border-radius: 2px;
 }
 
-.analytics-flow-summary {
+.analytics-peaks { display: grid; gap: 14px; }
+
+.peaks-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin: 12px 0;
 }
 
-.analytics-flow-total {
+.peak-card {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -1230,13 +1231,26 @@ html, body {
   font-size: 12px;
 }
 
-.analytics-flow-total strong { font-size: 14px; }
-.analytics-flow-total.income strong { color: var(--accent-green); }
-.analytics-flow-total.expense strong { color: var(--accent-red); }
-.analytics-flow-total.balance strong { color: var(--accent-cyan); }
+.peak-card strong { font-size: 18px; }
+.peak-card small { color: var(--text-dim); }
+.peak-card.income { border-left: 3px solid var(--accent-green); }
+.peak-card.expense { border-left: 3px solid var(--accent-red); }
+.peak-card.income strong { color: var(--accent-green); }
+.peak-card.expense strong { color: var(--accent-red); }
+
+.peaks-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.peaks-list-title { margin-bottom: 8px; color: var(--text-muted); font-size: 12px; }
+.peak-row { display: grid; grid-template-columns: 94px minmax(30px, 1fr) auto; align-items: center; gap: 8px; padding: 7px 0; font-size: 12px; }
+.peak-track { height: 7px; overflow: hidden; border-radius: 99px; background: var(--bg-card-subtle); }
+.peak-fill { height: 100%; border-radius: inherit; }
+.peak-row.expense .peak-fill { background: var(--accent-red); }
+.peak-row.income .peak-fill { background: var(--accent-green); }
+.peak-row strong { white-space: nowrap; font-size: 12px; }
+.peak-row.expense strong { color: var(--accent-red); }
+.peak-row.income strong { color: var(--accent-green); }
 
 @media (max-width: 560px) {
-  .analytics-flow-summary { grid-template-columns: 1fr; }
+  .peaks-summary, .peaks-lists { grid-template-columns: 1fr; }
 }
 
 /* Multi-select account list for goals */

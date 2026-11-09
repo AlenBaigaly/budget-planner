@@ -243,12 +243,12 @@ export function drawPixelBarChart(canvas, monthsData, { labelEvery = 1 } = {}) {
     // Income Bar (Green)
     const incX = groupCenter - barWidth - 3;
     const incY = paddingTop + chartH - incH;
-    drawRoundedBar(incX, incY, barWidth, incH, '#10b981');
+    drawRoundedBar(incX, incY, barWidth, incH, item.isForecast ? 'rgba(16, 185, 129, .42)' : '#10b981');
 
     // Expense Bar (Rose)
     const expX = groupCenter + 3;
     const expY = paddingTop + chartH - expH;
-    drawRoundedBar(expX, expY, barWidth, expH, '#f43f5e');
+    drawRoundedBar(expX, expY, barWidth, expH, item.isForecast ? 'rgba(244, 63, 94, .42)' : '#f43f5e');
 
     // Date/month label. Daily charts show a label every few days to stay readable.
     if (index % labelEvery === 0 || index === monthsData.length - 1) {

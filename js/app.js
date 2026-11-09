@@ -2595,77 +2595,99 @@ class BudgetApp {
 
     const barCanvas = document.getElementById('chart-monthly-bars');
     const monthsData = [];
-    const now = new Date();
     const monthShortNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    const monthNamesFull = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+    const projectionYear = this.state.settings.selectedYear;
+    const projectionMonth = this.state.settings.selectedMonth;
+    const projectionTitle = document.getElementById('chart-projection-title');
 
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(projectionYear, projectionMonth - 1 + i, 1);
       const y = d.getFullYear();
       const m = d.getMonth() + 1;
 
       const txs = this.state.transactions.filter((t) => {
-        if (!t.date || t.status === 'planned') return false;
+        if (!t.date) return false;
         const [ty, tm] = t.date.split('-').map(Number);
-        return ty === y && tm === m;
+        return ty === y && tm === m && (i === 0 ? t.status !== 'planned' : t.status === 'planned');
       });
 
-      const inc = txs.filter((t) => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-      const exp = txs.filter((t) => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+      const recurringForMonth = i === 0 ? [] : (this.state.recurring || []).filter((rec) => rec.status === 'active');
+      const inc = txs.filter((t) => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0)
+        + recurringForMonth.filter((rec) => rec.type === 'income').reduce((s, rec) => s + Number(rec.amount || 0), 0);
+      const exp = txs.filter((t) => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0)
+        + recurringForMonth.filter((rec) => rec.type === 'expense').reduce((s, rec) => s + Number(rec.amount || 0), 0);
 
       monthsData.push({
         label: monthShortNames[m - 1],
         income: inc,
-        expense: exp
+        expense: exp,
+        isForecast: i > 0
       });
     }
 
     drawPixelBarChart(barCanvas, monthsData);
+    if (projectionTitle) {
+      const lastDate = new Date(projectionYear, projectionMonth - 1 + 5, 1);
+      projectionTitle.textContent = `Доходы и расходы: ${monthNamesFull[projectionMonth - 1]} ${projectionYear} — ${monthNamesFull[lastDate.getMonth()]} ${lastDate.getFullYear()}`;
+    }
 
-    // Detailed chronological cash flow for the month selected in the header.
+    // Monthly peaks show the days on which the most money actually moved.
     const selectedYear = this.state.settings.selectedYear;
     const selectedMonth = this.state.settings.selectedMonth;
-    const monthNamesFull = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
-    const flowTitle = document.getElementById('analytics-monthly-flow-title');
-    const flowSummary = document.getElementById('analytics-monthly-flow-summary');
-    const dailyCanvas = document.getElementById('chart-daily-bars');
+    const peaksTitle = document.getElementById('analytics-peaks-title');
+    const peaksContainer = document.getElementById('analytics-peaks');
     const monthlyFlow = this.state.transactions
       .filter((tx) => {
         const [year, month] = (tx.date || '').split('-').map(Number);
-        return year === selectedYear && month === selectedMonth && (tx.type === 'income' || tx.type === 'expense');
+        return year === selectedYear && month === selectedMonth && tx.status !== 'planned' && (tx.type === 'income' || tx.type === 'expense');
       })
       .sort((a, b) => String(a.date).localeCompare(String(b.date)));
 
-    const actualIncome = monthlyFlow
-      .filter((tx) => tx.type === 'income' && tx.status !== 'planned')
-      .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-    const actualExpense = monthlyFlow
-      .filter((tx) => tx.type === 'expense' && tx.status !== 'planned')
-      .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-
-    if (flowTitle) flowTitle.textContent = `Доходы и расходы — ${monthNamesFull[selectedMonth - 1]} ${selectedYear}`;
-    if (flowSummary) {
-      flowSummary.innerHTML = `
-        <div class="analytics-flow-total income"><span>Доходы</span><strong class="amount-mono">+${actualIncome.toLocaleString('ru-RU')} ₸</strong></div>
-        <div class="analytics-flow-total expense"><span>Расходы</span><strong class="amount-mono">-${actualExpense.toLocaleString('ru-RU')} ₸</strong></div>
-        <div class="analytics-flow-total balance"><span>Итог</span><strong class="amount-mono">${actualIncome - actualExpense >= 0 ? '+' : ''}${(actualIncome - actualExpense).toLocaleString('ru-RU')} ₸</strong></div>
+    if (peaksTitle) peaksTitle.textContent = `Пики — ${monthNamesFull[selectedMonth - 1]} ${selectedYear}`;
+    if (peaksContainer) {
+      const dailyTotals = Object.values(monthlyFlow.reduce((days, tx) => {
+        if (!days[tx.date]) days[tx.date] = { date: tx.date, income: 0, expense: 0 };
+        days[tx.date][tx.type] += Number(tx.amount || 0);
+        return days;
+      }, {}));
+      const topExpenseDays = dailyTotals.filter((day) => day.expense > 0).sort((a, b) => b.expense - a.expense).slice(0, 3);
+      const topIncomeDays = dailyTotals.filter((day) => day.income > 0).sort((a, b) => b.income - a.income).slice(0, 3);
+      const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      const peakCard = (title, days, type) => {
+        const colorClass = type === 'income' ? 'income' : 'expense';
+        const peak = days[0];
+        if (!peak) return `<div class="peak-card ${colorClass}"><span>${title}</span><strong>Нет операций</strong><small>В этом месяце пока пусто</small></div>`;
+        const max = peak[type];
+        return `
+          <div class="peak-card ${colorClass}">
+            <span>${title}</span>
+            <strong class="amount-mono">${type === 'income' ? '+' : '-'}${max.toLocaleString('ru-RU')} ₸</strong>
+            <small>${formatDate(peak.date)}</small>
+          </div>
+        `;
+      };
+      const dayRows = (days, type) => {
+        const max = days[0]?.[type] || 1;
+        if (!days.length) return '<div class="text-dim">Нет данных</div>';
+        return days.map((day) => `
+          <div class="peak-row ${type}">
+            <span>${formatDate(day.date)}</span>
+            <div class="peak-track"><div class="peak-fill" style="width:${Math.round((day[type] / max) * 100)}%"></div></div>
+            <strong class="amount-mono">${day[type].toLocaleString('ru-RU')} ₸</strong>
+          </div>
+        `).join('');
+      };
+      peaksContainer.innerHTML = `
+        <div class="peaks-summary">
+          ${peakCard('Самый большой расход', topExpenseDays, 'expense')}
+          ${peakCard('Самый большой доход', topIncomeDays, 'income')}
+        </div>
+        <div class="peaks-lists">
+          <div><div class="peaks-list-title">Топ дней по расходам</div>${dayRows(topExpenseDays, 'expense')}</div>
+          <div><div class="peaks-list-title">Топ дней по доходам</div>${dayRows(topIncomeDays, 'income')}</div>
+        </div>
       `;
-    }
-
-    if (dailyCanvas) {
-      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-      const dailyData = Array.from({ length: daysInMonth }, (_, index) => {
-        const day = index + 1;
-        const dayTxs = monthlyFlow.filter((tx) => {
-          const txDay = Number((tx.date || '').split('-')[2]);
-          return txDay === day && tx.status !== 'planned';
-        });
-        return {
-          label: String(day),
-          income: dayTxs.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0),
-          expense: dayTxs.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
-        };
-      });
-      drawPixelBarChart(dailyCanvas, dailyData, { labelEvery: 5 });
     }
 
     // Month over Month comparison
