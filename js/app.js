@@ -2627,7 +2627,7 @@ class BudgetApp {
     const monthNamesFull = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
     const flowTitle = document.getElementById('analytics-monthly-flow-title');
     const flowSummary = document.getElementById('analytics-monthly-flow-summary');
-    const flowContainer = document.getElementById('analytics-monthly-flow');
+    const dailyCanvas = document.getElementById('chart-daily-bars');
     const monthlyFlow = this.state.transactions
       .filter((tx) => {
         const [year, month] = (tx.date || '').split('-').map(Number);
@@ -2651,40 +2651,21 @@ class BudgetApp {
       `;
     }
 
-    if (flowContainer) {
-      if (!monthlyFlow.length) {
-        flowContainer.innerHTML = '<div class="text-dim text-center" style="padding: 20px;">Нет доходов и расходов за выбранный месяц.</div>';
-      } else {
-        const byDate = monthlyFlow.reduce((groups, tx) => {
-          (groups[tx.date] ||= []).push(tx);
-          return groups;
-        }, {});
-        flowContainer.innerHTML = Object.entries(byDate).map(([date, txs]) => {
-          const readableDate = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-          return `
-            <div class="analytics-flow-day">
-              <div class="analytics-flow-date">${readableDate}</div>
-              <div class="analytics-flow-items">
-                ${txs.map((tx) => {
-                  const category = this.state.categories.find((cat) => cat.id === tx.categoryId);
-                  const isIncome = tx.type === 'income';
-                  const isPlanned = tx.status === 'planned';
-                  return `
-                    <div class="analytics-flow-item ${isIncome ? 'income' : 'expense'} ${isPlanned ? 'planned' : ''}">
-                      <div class="analytics-flow-name">
-                        <span>${category?.icon || (isIncome ? '💰' : '🧾')}</span>
-                        <span>${tx.name || category?.name || (isIncome ? 'Доход' : 'Расход')}</span>
-                        ${isPlanned ? '<span class="status-badge planned">План</span>' : ''}
-                      </div>
-                      <strong class="amount-mono">${isIncome ? '+' : '-'}${Number(tx.amount || 0).toLocaleString('ru-RU')} ₸</strong>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
+    if (dailyCanvas) {
+      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+      const dailyData = Array.from({ length: daysInMonth }, (_, index) => {
+        const day = index + 1;
+        const dayTxs = monthlyFlow.filter((tx) => {
+          const txDay = Number((tx.date || '').split('-')[2]);
+          return txDay === day && tx.status !== 'planned';
+        });
+        return {
+          label: String(day),
+          income: dayTxs.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0),
+          expense: dayTxs.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+        };
+      });
+      drawPixelBarChart(dailyCanvas, dailyData, { labelEvery: 5 });
     }
 
     // Month over Month comparison

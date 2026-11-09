@@ -408,10 +408,16 @@
         <div class="pixel-card">
           <div class="card-title">
             <span id="analytics-monthly-flow-title">Доходы и расходы за месяц</span>
-            <span class="tag">По датам</span>
+            <span class="tag">По дням</span>
           </div>
           <div id="analytics-monthly-flow-summary" class="analytics-flow-summary"></div>
-          <div id="analytics-monthly-flow" class="analytics-flow-list"></div>
+          <div class="chart-wrapper">
+            <canvas id="chart-daily-bars"></canvas>
+          </div>
+          <div class="chart-legend" style="justify-content: center;">
+            <div class="legend-item"><span class="legend-color-box" style="background:#10b981;"></span> Доходы</div>
+            <div class="legend-item"><span class="legend-color-box" style="background:#ef4444;"></span> Расходы</div>
+          </div>
         </div>
       </section>
 

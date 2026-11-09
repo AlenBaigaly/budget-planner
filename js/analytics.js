@@ -144,7 +144,7 @@ export function drawPixelPieChart(canvas, dataItems) {
 /**
  * Draws a modern monthly comparison bar chart (Income vs Expense)
  */
-export function drawPixelBarChart(canvas, monthsData) {
+export function drawPixelBarChart(canvas, monthsData, { labelEvery = 1 } = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -216,7 +216,7 @@ export function drawPixelBarChart(canvas, monthsData) {
 
   // Draw Bars
   const barGroupWidth = chartW / monthsData.length;
-  const barWidth = Math.max(8, Math.min(22, (barGroupWidth - 14) / 2));
+  const barWidth = Math.max(2, Math.min(22, (barGroupWidth - 5) / 2));
 
   // Helper for drawing rounded bar tops
   const drawRoundedBar = (x, y, w, h, fillStyle) => {
@@ -250,11 +250,13 @@ export function drawPixelBarChart(canvas, monthsData) {
     const expY = paddingTop + chartH - expH;
     drawRoundedBar(expX, expY, barWidth, expH, '#f43f5e');
 
-    // Month label
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '500 11px Inter, -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(item.label || item.month, groupCenter, height - 12);
+    // Date/month label. Daily charts show a label every few days to stay readable.
+    if (index % labelEvery === 0 || index === monthsData.length - 1) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '500 11px Inter, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.label || item.month, groupCenter, height - 12);
+    }
   });
 }
 
