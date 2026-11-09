@@ -1,13 +1,13 @@
-const CACHE_NAME = 'budget-planner-v13';
+const CACHE_NAME = 'budget-planner-v14';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/pixel-theme.css',
-  './js/app.js',
-  './js/bcc-deposits.js',
-  './js/analytics.js',
-  './js/firebase-config.js',
+  './js/app.js?v=14',
+  './js/bcc-deposits.js?v=14',
+  './js/analytics.js?v=14',
+  './js/firebase-config.js?v=14',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'
