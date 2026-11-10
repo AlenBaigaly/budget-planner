@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=19';
+} from './bcc-deposits.js?v=20';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=19';
+} from './analytics.js?v=20';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=19';
+} from './firebase-config.js?v=20';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -1595,6 +1595,7 @@ class BudgetApp {
       const initialBalance = parseFloat(document.getElementById('acc-input-balance').value) || 0;
       const icon = document.getElementById('acc-input-icon').value.trim() || '💰';
       const excludeFromTotal = document.getElementById('acc-input-exclude').checked;
+      const isBCCDeposit = type === 'deposit';
 
       if (!name) return;
 
@@ -1607,10 +1608,21 @@ class BudgetApp {
             type,
             initialBalance,
             icon,
-            excludeFromTotal
+            excludeFromTotal,
+            isBCC: isBCCDeposit,
+            ...(isBCCDeposit ? {
+              subType: this.state.accounts[idx].subType || 'my_goal',
+              termMonths: this.state.accounts[idx].termMonths || 3,
+              nominalRate: this.state.accounts[idx].nominalRate || 16.7,
+              effectiveRate: this.state.accounts[idx].effectiveRate || 18.06,
+              startDate: this.state.accounts[idx].startDate || new Date().toISOString().split('T')[0],
+              monthlyTopUp: this.state.accounts[idx].monthlyTopUp || 0,
+              allowsWithdrawal: this.state.accounts[idx].allowsWithdrawal ?? false,
+              minBalance: this.state.accounts[idx].minBalance || 0
+            } : {})
           };
-          this.logActivity(`Обновлён счёт: ${name}`);
-          this.showToast('Счёт обновлён', 'success');
+          this.logActivity(`${isBCCDeposit ? 'Настроен BCC депозит' : 'Обновлён счёт'}: ${name}`);
+          this.showToast(isBCCDeposit ? 'Счёт перенесён в BCC-депозиты' : 'Счёт обновлён', 'success');
         }
       } else {
         const newAcc = {
@@ -1620,7 +1632,18 @@ class BudgetApp {
           currency: '₸',
           initialBalance,
           icon,
-          excludeFromTotal
+          excludeFromTotal,
+          isBCC: isBCCDeposit,
+          ...(isBCCDeposit ? {
+            subType: 'my_goal',
+            termMonths: 3,
+            nominalRate: 16.7,
+            effectiveRate: 18.06,
+            startDate: new Date().toISOString().split('T')[0],
+            monthlyTopUp: 0,
+            allowsWithdrawal: false,
+            minBalance: 0
+          } : {})
         };
         this.state.accounts.push(newAcc);
         this.logActivity(`Создан новый счёт: ${name}`);

@@ -631,6 +631,7 @@
                 <option value="card">Банковская карта</option>
                 <option value="cash">Наличные</option>
                 <option value="savings">Накопительный счёт</option>
+                <option value="deposit">BCC депозит</option>
               </select>
             </div>
             <div class="form-group">
@@ -931,10 +932,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=19"></script>
-  <script type="module" src="./js/analytics.js?v=19"></script>
-  <script type="module" src="./js/firebase-config.js?v=19"></script>
-  <script type="module" src="./js/app.js?v=19"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=20"></script>
+  <script type="module" src="./js/analytics.js?v=20"></script>
+  <script type="module" src="./js/firebase-config.js?v=20"></script>
+  <script type="module" src="./js/app.js?v=20"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1046,7 +1047,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=19');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=20');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
