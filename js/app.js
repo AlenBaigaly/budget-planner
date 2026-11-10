@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=17';
+} from './bcc-deposits.js?v=18';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=17';
+} from './analytics.js?v=18';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=17';
+} from './firebase-config.js?v=18';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -1911,6 +1911,7 @@ class BudgetApp {
     this.editingAccountId = depId;
     const title = document.getElementById('modal-deposit-title');
     const nameInput = document.getElementById('dep-input-name');
+    const iconInput = document.getElementById('dep-input-icon');
     const typeSelect = document.getElementById('dep-input-type');
     const amountInput = document.getElementById('dep-input-amount');
     const termInput = document.getElementById('dep-input-term');
@@ -1936,6 +1937,7 @@ class BudgetApp {
       if (dep) {
         title.textContent = 'Настройки депозита BCC';
         nameInput.value = dep.name;
+        iconInput.value = dep.icon || (dep.subType === 'champion' ? '🏆' : '🏦');
         typeSelect.value = dep.subType || 'my_goal';
         amountInput.value = dep.initialBalance;
         termInput.value = dep.termMonths;
@@ -1948,6 +1950,7 @@ class BudgetApp {
       title.textContent = 'Открыть депозит BCC';
       typeSelect.value = 'my_goal';
       applyPreset('my_goal');
+      iconInput.value = '🏦';
       amountInput.value = '100000';
       dateInput.value = new Date().toISOString().split('T')[0];
       topupInput.value = '0';

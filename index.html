@@ -673,9 +673,15 @@
             </select>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Название вклада</label>
-            <input type="text" id="dep-input-name" class="pixel-input" required>
+          <div class="form-row two-col">
+            <div class="form-group">
+              <label class="form-label">Название вклада</label>
+              <input type="text" id="dep-input-name" class="pixel-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Эмодзи</label>
+              <input type="text" id="dep-input-icon" class="pixel-input" value="🏦" maxlength="8" style="text-align: center;" aria-label="Эмодзи депозита">
+            </div>
           </div>
 
           <div class="form-row two-col">
@@ -917,10 +923,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=17"></script>
-  <script type="module" src="./js/analytics.js?v=17"></script>
-  <script type="module" src="./js/firebase-config.js?v=17"></script>
-  <script type="module" src="./js/app.js?v=17"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=18"></script>
+  <script type="module" src="./js/analytics.js?v=18"></script>
+  <script type="module" src="./js/firebase-config.js?v=18"></script>
+  <script type="module" src="./js/app.js?v=18"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -931,6 +937,7 @@
 
         const subType = document.getElementById('dep-input-type').value;
         const name = document.getElementById('dep-input-name').value.trim();
+        const icon = document.getElementById('dep-input-icon').value.trim() || (subType === 'champion' ? '🏆' : '🏦');
         const initialBalance = parseFloat(document.getElementById('dep-input-amount').value) || 0;
         const termMonths = parseInt(document.getElementById('dep-input-term').value, 10) || 3;
         const nominalRate = parseFloat(document.getElementById('dep-input-nom-rate').value) || 16.7;
@@ -951,6 +958,7 @@
             app.state.accounts[idx] = {
               ...app.state.accounts[idx],
               name,
+              icon,
               subType,
               initialBalance,
               termMonths,
@@ -972,7 +980,7 @@
             isBCC: true,
             subType,
             currency: '₸',
-            icon: isChampion ? '🏆' : '🏦',
+            icon,
             initialBalance,
             excludeFromTotal: false,
             termMonths,
@@ -1001,7 +1009,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=17');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=18');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
