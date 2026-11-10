@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=16';
+} from './bcc-deposits.js?v=17';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=16';
+} from './analytics.js?v=17';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=16';
+} from './firebase-config.js?v=17';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -1133,6 +1133,9 @@ class BudgetApp {
 
     const today = new Date();
     const todayKey = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = [yesterday.getFullYear(), String(yesterday.getMonth() + 1).padStart(2, '0'), String(yesterday.getDate()).padStart(2, '0')].join('-');
     const renderTransaction = (tx) => {
       const cat = this.state.categories.find((c) => c.id === tx.categoryId);
       const accFrom = this.state.accounts.find((a) => a.id === tx.accountId);
@@ -1197,11 +1200,11 @@ class BudgetApp {
     }, {});
 
     const formatDay = (date) => {
-      if (date === todayKey) return 'Сегодня';
       const [year, month, day] = date.split('-').map(Number);
-      return new Date(year, month - 1, day).toLocaleDateString('ru-RU', {
-        day: 'numeric', month: 'long', weekday: 'short'
-      });
+      const dateName = new Date(year, month - 1, day).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      if (date === todayKey) return `Сегодня — ${dateName}`;
+      if (date === yesterdayKey) return `Вчера — ${dateName}`;
+      return dateName;
     };
 
     listEl.innerHTML = Object.entries(groups).map(([date, dayTxs]) => {
@@ -1215,7 +1218,6 @@ class BudgetApp {
           <div class="tx-day-header">
             <div>
               <strong>${formatDay(date)}</strong>
-              <span>${date}</span>
             </div>
             <div class="tx-day-totals">
               ${income > 0 ? `<b class="income">+${income.toLocaleString('ru-RU')} ₸</b>` : ''}

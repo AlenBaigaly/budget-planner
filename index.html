@@ -917,10 +917,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=16"></script>
-  <script type="module" src="./js/analytics.js?v=16"></script>
-  <script type="module" src="./js/firebase-config.js?v=16"></script>
-  <script type="module" src="./js/app.js?v=16"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=17"></script>
+  <script type="module" src="./js/analytics.js?v=17"></script>
+  <script type="module" src="./js/firebase-config.js?v=17"></script>
+  <script type="module" src="./js/app.js?v=17"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1001,7 +1001,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=16');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=17');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
