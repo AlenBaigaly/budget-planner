@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=21';
+} from './bcc-deposits.js?v=22';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=21';
+} from './analytics.js?v=22';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=21';
+} from './firebase-config.js?v=22';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -1711,7 +1711,6 @@ class BudgetApp {
   renderBudgetLimitsTab() {
     const container = document.getElementById('budget-limits-list');
     const totalLimitInput = document.getElementById('input-total-monthly-limit');
-    const totalLimitRange = document.getElementById('input-total-monthly-limit-range');
     const totalSpentEl = document.getElementById('budget-total-spent');
     const totalLimitDisplay = document.getElementById('budget-total-limit-display');
     const totalProgressBar = document.getElementById('budget-total-progress-bar');
@@ -1726,10 +1725,6 @@ class BudgetApp {
     const totalLimit = Number(this.state.limits.monthlyTotalLimit) || 0;
 
     if (totalLimitInput) totalLimitInput.value = totalLimit;
-    if (totalLimitRange) {
-      totalLimitRange.max = Math.max(1000000, Math.ceil(totalLimit / 50000) * 50000);
-      totalLimitRange.value = Math.min(totalLimit, Number(totalLimitRange.max));
-    }
     if (totalSpentEl) totalSpentEl.textContent = `${totalSpent.toLocaleString('ru-RU')} ₸`;
     if (totalLimitDisplay) totalLimitDisplay.textContent = `${totalLimit.toLocaleString('ru-RU')} ₸`;
 
@@ -1746,88 +1741,61 @@ class BudgetApp {
       catExpenses[t.categoryId] = (catExpenses[t.categoryId] || 0) + Number(t.amount);
     });
 
-    const expenseCategories = this.state.categories.filter((c) => c.type === 'expense');
+    const order = this.state.settings?.budgetCategoryOrder || [];
+    const expenseCategories = this.state.categories
+      .filter((c) => c.type === 'expense')
+      .sort((left, right) => {
+        const leftIndex = order.indexOf(left.id);
+        const rightIndex = order.indexOf(right.id);
+        if (leftIndex === -1 && rightIndex === -1) return 0;
+        if (leftIndex === -1) return 1;
+        if (rightIndex === -1) return -1;
+        return leftIndex - rightIndex;
+      });
 
-    container.innerHTML = expenseCategories.map((cat) => {
+    container.innerHTML = expenseCategories.map((cat, index) => {
       const limit = Number(this.state.limits.categoryLimits[cat.id]) || 0;
       const spent = catExpenses[cat.id] || 0;
       const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
       const remaining = limit - spent;
 
       return `
-        <div class="pixel-card budget-category-card" data-cat-id="${cat.id}" data-spent="${spent}" style="margin-bottom: 10px; padding: 12px;">
+        <div class="pixel-card" style="margin-bottom: 10px; padding: 12px;">
           <div class="d-flex justify-between align-center">
             <div class="d-flex align-center gap-2">
               <span style="font-size: 18px;">${cat.icon}</span>
               <span style="font-size: 13px; font-weight: 600; color: #fff;">${cat.name}</span>
             </div>
-            <div class="amount-mono budget-category-percent" style="font-size: 12px; font-weight: 700; color: ${pct > 100 ? 'var(--accent-red)' : pct >= 75 ? 'var(--accent-amber)' : 'var(--accent-green)'}">
-              ${pct}%
+            <div class="d-flex align-center gap-2">
+              <div class="category-order-buttons" aria-label="Порядок категории ${cat.name}">
+                <button class="category-order-btn btn-move-category" data-id="${cat.id}" data-direction="up" title="Переместить выше" aria-label="Переместить ${cat.name} выше" ${index === 0 ? 'disabled' : ''}>↑</button>
+                <button class="category-order-btn btn-move-category" data-id="${cat.id}" data-direction="down" title="Переместить ниже" aria-label="Переместить ${cat.name} ниже" ${index === expenseCategories.length - 1 ? 'disabled' : ''}>↓</button>
+              </div>
+              <div class="amount-mono" style="font-size: 12px; font-weight: 700; color: ${pct > 100 ? 'var(--accent-red)' : pct >= 75 ? 'var(--accent-amber)' : 'var(--accent-green)'}">
+                ${pct}%
+              </div>
             </div>
           </div>
 
           <div class="pixel-progress-wrap">
             <div class="pixel-progress">
-              <div class="pixel-progress-bar budget-category-progress ${pct > 100 ? 'danger' : pct >= 75 ? 'warning' : ''}" style="width: ${Math.min(100, pct)}%"></div>
+              <div class="pixel-progress-bar ${pct > 100 ? 'danger' : pct >= 75 ? 'warning' : ''}" style="width: ${Math.min(100, pct)}%"></div>
             </div>
           </div>
 
           <div class="d-flex justify-between align-center amount-mono" style="font-size: 12px; margin-top: 4px;">
             <span>Потрачено: <strong class="text-red">${spent.toLocaleString('ru-RU')} ₸</strong></span>
-            <span>Лимит: <strong class="budget-category-limit">${limit > 0 ? limit.toLocaleString('ru-RU') + ' ₸' : '—'}</strong></span>
-            <span class="budget-category-remaining">${remaining >= 0 ? `Осталось: <span class="text-green">${remaining.toLocaleString('ru-RU')} ₸</span>` : `Превышено: <span class="text-red">${Math.abs(remaining).toLocaleString('ru-RU')} ₸</span>`}</span>
+            <span>Лимит: <strong>${limit > 0 ? limit.toLocaleString('ru-RU') + ' ₸' : '—'}</strong></span>
+            <span>${remaining >= 0 ? `Осталось: <span class="text-green">${remaining.toLocaleString('ru-RU')} ₸</span>` : `Превышено: <span class="text-red">${Math.abs(remaining).toLocaleString('ru-RU')} ₸</span>`}</span>
           </div>
 
-          <div class="d-flex justify-between align-center mt-2" style="gap: 10px; flex-wrap: wrap;">
-            <input type="range" class="budget-range cat-limit-range" data-cat-id="${cat.id}" min="0" max="${Math.max(200000, Math.ceil(limit / 50000) * 50000)}" step="1000" value="${limit}">
+          <div class="d-flex justify-between align-center mt-2">
             <input type="number" step="any" class="pixel-input cat-limit-input amount-mono" data-cat-id="${cat.id}" value="${limit || ''}" placeholder="Лимит в ₸" style="max-width: 140px; font-size: 12px; padding: 4px 8px;">
             <button class="pixel-btn pixel-btn-sm btn-save-cat-limit" data-cat-id="${cat.id}">Сохранить</button>
           </div>
         </div>
       `;
     }).join('');
-
-    const updateCategoryPreview = (catId, rawValue) => {
-      const card = container.querySelector(`.budget-category-card[data-cat-id="${catId}"]`);
-      if (!card) return;
-      const value = Math.max(0, Number(rawValue) || 0);
-      const spent = Number(card.dataset.spent) || 0;
-      const pct = value > 0 ? Math.round((spent / value) * 100) : 0;
-      const remaining = value - spent;
-      const range = card.querySelector('.cat-limit-range');
-      const input = card.querySelector('.cat-limit-input');
-      if (range) {
-        range.max = Math.max(200000, Math.ceil(value / 50000) * 50000);
-        range.value = Math.min(value, Number(range.max));
-      }
-      if (input && document.activeElement !== input) input.value = value || '';
-      const percent = card.querySelector('.budget-category-percent');
-      const progress = card.querySelector('.budget-category-progress');
-      const limitLabel = card.querySelector('.budget-category-limit');
-      const remainingLabel = card.querySelector('.budget-category-remaining');
-      if (percent) {
-        percent.textContent = `${pct}%`;
-        percent.style.color = pct > 100 ? 'var(--accent-red)' : pct >= 75 ? 'var(--accent-amber)' : 'var(--accent-green)';
-      }
-      if (progress) {
-        progress.style.width = `${Math.min(100, pct)}%`;
-        progress.className = `pixel-progress-bar budget-category-progress ${pct > 100 ? 'danger' : pct >= 75 ? 'warning' : ''}`;
-      }
-      if (limitLabel) limitLabel.textContent = value > 0 ? `${value.toLocaleString('ru-RU')} ₸` : '—';
-      if (remainingLabel) {
-        remainingLabel.innerHTML = remaining >= 0
-          ? `Осталось: <span class="text-green">${remaining.toLocaleString('ru-RU')} ₸</span>`
-          : `Превышено: <span class="text-red">${Math.abs(remaining).toLocaleString('ru-RU')} ₸</span>`;
-      }
-    };
-
-    container.querySelectorAll('.cat-limit-range').forEach((range) => {
-      range.addEventListener('input', () => updateCategoryPreview(range.dataset.catId, range.value));
-    });
-
-    container.querySelectorAll('.cat-limit-input').forEach((input) => {
-      input.addEventListener('input', () => updateCategoryPreview(input.dataset.catId, input.value));
-    });
 
     container.querySelectorAll('.btn-save-cat-limit').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1840,36 +1808,22 @@ class BudgetApp {
         this.showToast('Лимит сохранён', 'success');
       });
     });
+
+    container.querySelectorAll('.btn-move-category').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const currentOrder = expenseCategories.map((category) => category.id);
+        const index = currentOrder.indexOf(btn.dataset.id);
+        const targetIndex = btn.dataset.direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= currentOrder.length) return;
+        [currentOrder[index], currentOrder[targetIndex]] = [currentOrder[targetIndex], currentOrder[index]];
+        this.state.settings = { ...this.state.settings, budgetCategoryOrder: currentOrder };
+        this.saveState();
+        this.render();
+      });
+    });
   }
 
   bindLimitsForm() {
-    const totalInput = document.getElementById('input-total-monthly-limit');
-    const totalRange = document.getElementById('input-total-monthly-limit-range');
-    const updateTotalPreview = (rawValue) => {
-      const value = Math.max(0, Number(rawValue) || 0);
-      const totalSpent = this.getFilteredTransactions()
-        .filter((t) => t.type === 'expense' && t.status !== 'planned')
-        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-      if (totalInput && document.activeElement !== totalInput) totalInput.value = value || '';
-      if (totalRange) {
-        totalRange.max = Math.max(1000000, Math.ceil(value / 50000) * 50000);
-        totalRange.value = Math.min(value, Number(totalRange.max));
-      }
-      const pct = value > 0 ? Math.round((totalSpent / value) * 100) : 0;
-      const display = document.getElementById('budget-total-limit-display');
-      const percent = document.getElementById('budget-total-percent');
-      const progress = document.getElementById('budget-total-progress-bar');
-      if (display) display.textContent = `${value.toLocaleString('ru-RU')} ₸`;
-      if (percent) percent.textContent = `${pct}%`;
-      if (progress) {
-        progress.style.width = `${Math.min(100, pct)}%`;
-        progress.className = `pixel-progress-bar ${pct > 100 ? 'danger' : pct >= 75 ? 'warning' : ''}`;
-      }
-    };
-
-    totalRange?.addEventListener('input', () => updateTotalPreview(totalRange.value));
-    totalInput?.addEventListener('input', () => updateTotalPreview(totalInput.value));
-
     document.getElementById('btn-save-total-limit')?.addEventListener('click', () => {
       const val = parseFloat(document.getElementById('input-total-monthly-limit').value) || 0;
       this.state.limits.monthlyTotalLimit = val;

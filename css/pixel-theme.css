@@ -1064,20 +1064,37 @@ html, body {
   color: var(--text-dim);
 }
 
-.budget-range {
-  accent-color: var(--accent-amber);
+.category-order-buttons {
+  display: inline-flex;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.category-order-btn {
+  width: 25px;
+  height: 23px;
+  padding: 0;
+  color: var(--text-muted);
+  background: var(--bg-input);
+  border: 0;
   cursor: pointer;
-  flex: 1 1 220px;
-  min-width: 180px;
-  height: 7px;
+  font-size: 15px;
+  line-height: 1;
 }
 
-.budget-range::-webkit-slider-thumb {
-  cursor: grab;
+.category-order-btn + .category-order-btn {
+  border-left: 1px solid var(--border-color);
 }
 
-.budget-range:active::-webkit-slider-thumb {
-  cursor: grabbing;
+.category-order-btn:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  color: var(--accent-amber);
+}
+
+.category-order-btn:disabled {
+  color: var(--text-dim);
+  cursor: not-allowed;
 }
 
 .deposit-history-panel {

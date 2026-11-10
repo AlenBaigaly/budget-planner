@@ -240,7 +240,6 @@
           </div>
 
           <div class="d-flex align-center gap-2 mt-4" style="flex-wrap: wrap;">
-            <input type="range" id="input-total-monthly-limit-range" class="budget-range" min="0" max="1000000" step="5000" value="0" aria-label="Общий месячный лимит">
             <input type="number" id="input-total-monthly-limit" class="pixel-input amount-mono" step="any" placeholder="Задать общий лимит на месяц в ₸" style="max-width: 260px;">
             <button id="btn-save-total-limit" class="pixel-btn pixel-btn-amber pixel-btn-sm">Сохранить лимит</button>
           </div>
@@ -933,10 +932,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=21"></script>
-  <script type="module" src="./js/analytics.js?v=21"></script>
-  <script type="module" src="./js/firebase-config.js?v=21"></script>
-  <script type="module" src="./js/app.js?v=21"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=22"></script>
+  <script type="module" src="./js/analytics.js?v=22"></script>
+  <script type="module" src="./js/firebase-config.js?v=22"></script>
+  <script type="module" src="./js/app.js?v=22"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1048,7 +1047,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=21');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=22');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
