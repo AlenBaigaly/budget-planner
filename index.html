@@ -695,6 +695,14 @@
             </div>
           </div>
 
+          <div id="dep-source-row" class="form-group">
+            <label class="form-label">Списать начальную сумму со счёта</label>
+            <select id="dep-input-source-account" class="pixel-select" required>
+              <option value="">Выберите счёт списания</option>
+            </select>
+            <div class="form-hint">Будет создан перевод на депозит — сумма спишется с выбранного счёта и появится в истории операций.</div>
+          </div>
+
           <div class="form-row two-col">
             <div class="form-group">
               <label class="form-label">Номинальная ставка (%)</label>
@@ -923,10 +931,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=18"></script>
-  <script type="module" src="./js/analytics.js?v=18"></script>
-  <script type="module" src="./js/firebase-config.js?v=18"></script>
-  <script type="module" src="./js/app.js?v=18"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=19"></script>
+  <script type="module" src="./js/analytics.js?v=19"></script>
+  <script type="module" src="./js/firebase-config.js?v=19"></script>
+  <script type="module" src="./js/app.js?v=19"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -944,6 +952,7 @@
         const effectiveRate = parseFloat(document.getElementById('dep-input-eff-rate').value) || 18.06;
         const startDate = document.getElementById('dep-input-start-date').value;
         const monthlyTopUp = parseFloat(document.getElementById('dep-input-topup').value) || 0;
+        const sourceAccountId = document.getElementById('dep-input-source-account').value;
 
         if (!name) {
           app.showToast('Введите название депозита!', 'error');
@@ -973,6 +982,22 @@
             app.showToast('Параметры вклада BCC обновлены', 'success');
           }
         } else {
+          const sourceAccount = app.state.accounts.find((account) => account.id === sourceAccountId && account.type !== 'deposit');
+          if (!sourceAccount) {
+            app.showToast('Выберите счёт, с которого открыть вклад!', 'error');
+            return;
+          }
+
+          if (initialBalance <= 0) {
+            app.showToast('Укажите начальную сумму вклада больше нуля!', 'error');
+            return;
+          }
+
+          if (app.calculateAccountBalance(sourceAccountId) < initialBalance) {
+            app.showToast('На выбранном счёте недостаточно средств для открытия вклада!', 'error');
+            return;
+          }
+
           const newDep = {
             id: 'acc_dep_' + Date.now(),
             name,
@@ -981,7 +1006,7 @@
             subType,
             currency: '₸',
             icon,
-            initialBalance,
+            initialBalance: 0,
             excludeFromTotal: false,
             termMonths,
             nominalRate,
@@ -992,8 +1017,20 @@
             minBalance: isChampion ? 1000 : 0
           };
           app.state.accounts.push(newDep);
-          app.logActivity(`Открыт новый вклад BCC: ${name}`);
-          app.showToast('Вклад BCC успешно добавлен', 'success');
+          app.state.transactions.push({
+            id: 'tx_open_dep_' + Date.now(),
+            type: 'transfer',
+            amount: initialBalance,
+            date: startDate,
+            accountId: sourceAccountId,
+            toAccountId: newDep.id,
+            categoryId: null,
+            note: `Открытие депозита «${name}»`,
+            status: 'confirmed',
+            createdAt: new Date().toISOString()
+          });
+          app.logActivity(`Открыт вклад BCC «${name}» со счёта «${sourceAccount.name}»: ${initialBalance.toLocaleString('ru-RU')} ₸`);
+          app.showToast('Вклад открыт: сумма переведена со счёта', 'success');
         }
 
         app.saveState();
@@ -1009,7 +1046,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=18');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=19');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);

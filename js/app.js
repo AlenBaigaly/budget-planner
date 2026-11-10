@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=18';
+} from './bcc-deposits.js?v=19';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=18';
+} from './analytics.js?v=19';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=18';
+} from './firebase-config.js?v=19';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -1912,6 +1912,8 @@ class BudgetApp {
     const title = document.getElementById('modal-deposit-title');
     const nameInput = document.getElementById('dep-input-name');
     const iconInput = document.getElementById('dep-input-icon');
+    const sourceRow = document.getElementById('dep-source-row');
+    const sourceSelect = document.getElementById('dep-input-source-account');
     const typeSelect = document.getElementById('dep-input-type');
     const amountInput = document.getElementById('dep-input-amount');
     const termInput = document.getElementById('dep-input-term');
@@ -1945,6 +1947,8 @@ class BudgetApp {
         effRateInput.value = dep.effectiveRate;
         dateInput.value = dep.startDate || new Date().toISOString().split('T')[0];
         topupInput.value = dep.monthlyTopUp || 0;
+        sourceRow.classList.add('hidden');
+        sourceSelect.required = false;
       }
     } else {
       title.textContent = 'Открыть депозит BCC';
@@ -1954,6 +1958,16 @@ class BudgetApp {
       amountInput.value = '100000';
       dateInput.value = new Date().toISOString().split('T')[0];
       topupInput.value = '0';
+      const sourceAccounts = this.state.accounts.filter((account) => account.type !== 'deposit');
+      sourceSelect.innerHTML = '<option value="">Выберите счёт списания</option>';
+      sourceAccounts.forEach((account) => {
+        const option = document.createElement('option');
+        option.value = account.id;
+        option.textContent = `${account.icon || '💳'} ${account.name} — ${this.calculateAccountBalance(account.id).toLocaleString('ru-RU')} ₸`;
+        sourceSelect.appendChild(option);
+      });
+      sourceRow.classList.remove('hidden');
+      sourceSelect.required = true;
     }
 
     this.openModal('modal-deposit');

@@ -1058,6 +1058,12 @@ html, body {
   letter-spacing: 0.3px;
 }
 
+.form-hint {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
 .pixel-input, .pixel-select, .pixel-textarea {
   background: var(--bg-input);
   border: 1px solid var(--border-color);
