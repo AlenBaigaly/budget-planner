@@ -739,6 +739,57 @@ html, body {
 .tx-list {
   display: flex;
   flex-direction: column;
+  gap: 18px;
+}
+
+.tx-day-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tx-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 2px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tx-day-header > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tx-day-header strong {
+  color: #fff;
+  font-size: 13px;
+}
+
+.tx-day-header span {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.tx-day-totals {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tx-day-totals b { font-weight: 600; }
+.tx-day-totals .income { color: var(--accent-green); }
+.tx-day-totals .expense { color: var(--accent-red); }
+.tx-day-totals em { color: var(--text-dim); font-style: normal; }
+
+.tx-day-items {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 

@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=15';
+} from './bcc-deposits.js?v=16';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=15';
+} from './analytics.js?v=16';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=15';
+} from './firebase-config.js?v=16';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -1131,7 +1131,9 @@ class BudgetApp {
       return;
     }
 
-    listEl.innerHTML = txs.map((tx) => {
+    const today = new Date();
+    const todayKey = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+    const renderTransaction = (tx) => {
       const cat = this.state.categories.find((c) => c.id === tx.categoryId);
       const accFrom = this.state.accounts.find((a) => a.id === tx.accountId);
       const accTo = this.state.accounts.find((a) => a.id === tx.toAccountId);
@@ -1186,6 +1188,43 @@ class BudgetApp {
             </div>
           </div>
         </div>
+      `;
+    };
+
+    const groups = txs.reduce((result, tx) => {
+      (result[tx.date] ||= []).push(tx);
+      return result;
+    }, {});
+
+    const formatDay = (date) => {
+      if (date === todayKey) return 'Сегодня';
+      const [year, month, day] = date.split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString('ru-RU', {
+        day: 'numeric', month: 'long', weekday: 'short'
+      });
+    };
+
+    listEl.innerHTML = Object.entries(groups).map(([date, dayTxs]) => {
+      const confirmed = dayTxs.filter((tx) => tx.status !== 'planned');
+      const income = confirmed.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+      const expense = confirmed.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+      const hasFlow = income > 0 || expense > 0;
+
+      return `
+        <section class="tx-day-group">
+          <div class="tx-day-header">
+            <div>
+              <strong>${formatDay(date)}</strong>
+              <span>${date}</span>
+            </div>
+            <div class="tx-day-totals">
+              ${income > 0 ? `<b class="income">+${income.toLocaleString('ru-RU')} ₸</b>` : ''}
+              ${expense > 0 ? `<b class="expense">−${expense.toLocaleString('ru-RU')} ₸</b>` : ''}
+              ${!hasFlow ? '<em>Переводы</em>' : ''}
+            </div>
+          </div>
+          <div class="tx-day-items">${dayTxs.map(renderTransaction).join('')}</div>
+        </section>
       `;
     }).join('');
 
