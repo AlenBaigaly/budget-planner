@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=20';
+} from './bcc-deposits.js?v=21';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=20';
+} from './analytics.js?v=21';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=20';
+} from './firebase-config.js?v=21';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -1711,6 +1711,7 @@ class BudgetApp {
   renderBudgetLimitsTab() {
     const container = document.getElementById('budget-limits-list');
     const totalLimitInput = document.getElementById('input-total-monthly-limit');
+    const totalLimitRange = document.getElementById('input-total-monthly-limit-range');
     const totalSpentEl = document.getElementById('budget-total-spent');
     const totalLimitDisplay = document.getElementById('budget-total-limit-display');
     const totalProgressBar = document.getElementById('budget-total-progress-bar');
@@ -1725,6 +1726,10 @@ class BudgetApp {
     const totalLimit = Number(this.state.limits.monthlyTotalLimit) || 0;
 
     if (totalLimitInput) totalLimitInput.value = totalLimit;
+    if (totalLimitRange) {
+      totalLimitRange.max = Math.max(1000000, Math.ceil(totalLimit / 50000) * 50000);
+      totalLimitRange.value = Math.min(totalLimit, Number(totalLimitRange.max));
+    }
     if (totalSpentEl) totalSpentEl.textContent = `${totalSpent.toLocaleString('ru-RU')} ₸`;
     if (totalLimitDisplay) totalLimitDisplay.textContent = `${totalLimit.toLocaleString('ru-RU')} ₸`;
 
@@ -1750,36 +1755,79 @@ class BudgetApp {
       const remaining = limit - spent;
 
       return `
-        <div class="pixel-card" style="margin-bottom: 10px; padding: 12px;">
+        <div class="pixel-card budget-category-card" data-cat-id="${cat.id}" data-spent="${spent}" style="margin-bottom: 10px; padding: 12px;">
           <div class="d-flex justify-between align-center">
             <div class="d-flex align-center gap-2">
               <span style="font-size: 18px;">${cat.icon}</span>
               <span style="font-size: 13px; font-weight: 600; color: #fff;">${cat.name}</span>
             </div>
-            <div class="amount-mono" style="font-size: 12px; font-weight: 700; color: ${pct > 100 ? 'var(--accent-red)' : pct >= 75 ? 'var(--accent-amber)' : 'var(--accent-green)'}">
+            <div class="amount-mono budget-category-percent" style="font-size: 12px; font-weight: 700; color: ${pct > 100 ? 'var(--accent-red)' : pct >= 75 ? 'var(--accent-amber)' : 'var(--accent-green)'}">
               ${pct}%
             </div>
           </div>
 
           <div class="pixel-progress-wrap">
             <div class="pixel-progress">
-              <div class="pixel-progress-bar ${pct > 100 ? 'danger' : pct >= 75 ? 'warning' : ''}" style="width: ${Math.min(100, pct)}%"></div>
+              <div class="pixel-progress-bar budget-category-progress ${pct > 100 ? 'danger' : pct >= 75 ? 'warning' : ''}" style="width: ${Math.min(100, pct)}%"></div>
             </div>
           </div>
 
           <div class="d-flex justify-between align-center amount-mono" style="font-size: 12px; margin-top: 4px;">
             <span>Потрачено: <strong class="text-red">${spent.toLocaleString('ru-RU')} ₸</strong></span>
-            <span>Лимит: <strong>${limit > 0 ? limit.toLocaleString('ru-RU') + ' ₸' : '—'}</strong></span>
-            <span>${remaining >= 0 ? `Осталось: <span class="text-green">${remaining.toLocaleString('ru-RU')} ₸</span>` : `Превышено: <span class="text-red">${Math.abs(remaining).toLocaleString('ru-RU')} ₸</span>`}</span>
+            <span>Лимит: <strong class="budget-category-limit">${limit > 0 ? limit.toLocaleString('ru-RU') + ' ₸' : '—'}</strong></span>
+            <span class="budget-category-remaining">${remaining >= 0 ? `Осталось: <span class="text-green">${remaining.toLocaleString('ru-RU')} ₸</span>` : `Превышено: <span class="text-red">${Math.abs(remaining).toLocaleString('ru-RU')} ₸</span>`}</span>
           </div>
 
-          <div class="d-flex justify-between align-center mt-2">
+          <div class="d-flex justify-between align-center mt-2" style="gap: 10px; flex-wrap: wrap;">
+            <input type="range" class="budget-range cat-limit-range" data-cat-id="${cat.id}" min="0" max="${Math.max(200000, Math.ceil(limit / 50000) * 50000)}" step="1000" value="${limit}">
             <input type="number" step="any" class="pixel-input cat-limit-input amount-mono" data-cat-id="${cat.id}" value="${limit || ''}" placeholder="Лимит в ₸" style="max-width: 140px; font-size: 12px; padding: 4px 8px;">
             <button class="pixel-btn pixel-btn-sm btn-save-cat-limit" data-cat-id="${cat.id}">Сохранить</button>
           </div>
         </div>
       `;
     }).join('');
+
+    const updateCategoryPreview = (catId, rawValue) => {
+      const card = container.querySelector(`.budget-category-card[data-cat-id="${catId}"]`);
+      if (!card) return;
+      const value = Math.max(0, Number(rawValue) || 0);
+      const spent = Number(card.dataset.spent) || 0;
+      const pct = value > 0 ? Math.round((spent / value) * 100) : 0;
+      const remaining = value - spent;
+      const range = card.querySelector('.cat-limit-range');
+      const input = card.querySelector('.cat-limit-input');
+      if (range) {
+        range.max = Math.max(200000, Math.ceil(value / 50000) * 50000);
+        range.value = Math.min(value, Number(range.max));
+      }
+      if (input && document.activeElement !== input) input.value = value || '';
+      const percent = card.querySelector('.budget-category-percent');
+      const progress = card.querySelector('.budget-category-progress');
+      const limitLabel = card.querySelector('.budget-category-limit');
+      const remainingLabel = card.querySelector('.budget-category-remaining');
+      if (percent) {
+        percent.textContent = `${pct}%`;
+        percent.style.color = pct > 100 ? 'var(--accent-red)' : pct >= 75 ? 'var(--accent-amber)' : 'var(--accent-green)';
+      }
+      if (progress) {
+        progress.style.width = `${Math.min(100, pct)}%`;
+        progress.className = `pixel-progress-bar budget-category-progress ${pct > 100 ? 'danger' : pct >= 75 ? 'warning' : ''}`;
+      }
+      if (limitLabel) limitLabel.textContent = value > 0 ? `${value.toLocaleString('ru-RU')} ₸` : '—';
+      if (remainingLabel) {
+        remainingLabel.innerHTML = remaining >= 0
+          ? `Осталось: <span class="text-green">${remaining.toLocaleString('ru-RU')} ₸</span>`
+          : `Превышено: <span class="text-red">${Math.abs(remaining).toLocaleString('ru-RU')} ₸</span>`;
+      }
+    };
+
+    container.querySelectorAll('.cat-limit-range').forEach((range) => {
+      range.addEventListener('input', () => updateCategoryPreview(range.dataset.catId, range.value));
+    });
+
+    container.querySelectorAll('.cat-limit-input').forEach((input) => {
+      input.addEventListener('input', () => updateCategoryPreview(input.dataset.catId, input.value));
+    });
 
     container.querySelectorAll('.btn-save-cat-limit').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1795,6 +1843,33 @@ class BudgetApp {
   }
 
   bindLimitsForm() {
+    const totalInput = document.getElementById('input-total-monthly-limit');
+    const totalRange = document.getElementById('input-total-monthly-limit-range');
+    const updateTotalPreview = (rawValue) => {
+      const value = Math.max(0, Number(rawValue) || 0);
+      const totalSpent = this.getFilteredTransactions()
+        .filter((t) => t.type === 'expense' && t.status !== 'planned')
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      if (totalInput && document.activeElement !== totalInput) totalInput.value = value || '';
+      if (totalRange) {
+        totalRange.max = Math.max(1000000, Math.ceil(value / 50000) * 50000);
+        totalRange.value = Math.min(value, Number(totalRange.max));
+      }
+      const pct = value > 0 ? Math.round((totalSpent / value) * 100) : 0;
+      const display = document.getElementById('budget-total-limit-display');
+      const percent = document.getElementById('budget-total-percent');
+      const progress = document.getElementById('budget-total-progress-bar');
+      if (display) display.textContent = `${value.toLocaleString('ru-RU')} ₸`;
+      if (percent) percent.textContent = `${pct}%`;
+      if (progress) {
+        progress.style.width = `${Math.min(100, pct)}%`;
+        progress.className = `pixel-progress-bar ${pct > 100 ? 'danger' : pct >= 75 ? 'warning' : ''}`;
+      }
+    };
+
+    totalRange?.addEventListener('input', () => updateTotalPreview(totalRange.value));
+    totalInput?.addEventListener('input', () => updateTotalPreview(totalInput.value));
+
     document.getElementById('btn-save-total-limit')?.addEventListener('click', () => {
       const val = parseFloat(document.getElementById('input-total-monthly-limit').value) || 0;
       this.state.limits.monthlyTotalLimit = val;
@@ -2046,6 +2121,79 @@ class BudgetApp {
     });
   }
 
+  getDepositBalanceHistory(dep) {
+    const openingDate = dep.startDate || new Date().toISOString().split('T')[0];
+    const dailyChanges = new Map([[openingDate, Number(dep.initialBalance) || 0]]);
+
+    this.state.transactions
+      .filter((tx) => tx.status !== 'planned' && (tx.accountId === dep.id || tx.toAccountId === dep.id))
+      .forEach((tx) => {
+        const date = tx.date || openingDate;
+        const amount = Number(tx.amount) || 0;
+        let change = 0;
+        if (tx.type === 'income' && tx.accountId === dep.id) change = amount;
+        if (tx.type === 'expense' && tx.accountId === dep.id) change = -amount;
+        if (tx.type === 'transfer') {
+          if (tx.accountId === dep.id) change -= amount;
+          if (tx.toAccountId === dep.id) change += amount;
+        }
+        dailyChanges.set(date, (dailyChanges.get(date) || 0) + change);
+      });
+
+    const points = [];
+    let balance = 0;
+    [...dailyChanges.entries()]
+      .sort(([first], [second]) => first.localeCompare(second))
+      .forEach(([date, change]) => {
+        balance += change;
+        points.push({ date, balance, change });
+      });
+
+    const today = new Date().toISOString().split('T')[0];
+    if (points.length && points[points.length - 1].date !== today) {
+      points.push({ date: today, balance, change: 0 });
+    }
+    return points;
+  }
+
+  buildDepositBalanceChart(points) {
+    if (!points.length) return '<div class="empty-state-desc">Пока нет данных для графика.</div>';
+
+    const width = 480;
+    const height = 190;
+    const padding = { top: 20, right: 20, bottom: 32, left: 58 };
+    const values = points.map((point) => point.balance);
+    const minValue = Math.min(0, ...values);
+    const maxValue = Math.max(1, ...values);
+    const valueRange = Math.max(1, maxValue - minValue);
+    const plotWidth = width - padding.left - padding.right;
+    const plotHeight = height - padding.top - padding.bottom;
+    const coordinates = points.map((point, index) => {
+      const x = padding.left + (points.length === 1 ? plotWidth / 2 : (index / (points.length - 1)) * plotWidth);
+      const y = padding.top + plotHeight - ((point.balance - minValue) / valueRange) * plotHeight;
+      return { ...point, x, y };
+    });
+    const polyline = coordinates.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+    const formatShortDate = (date) => new Date(`${date}T00:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    const grid = [0, 0.5, 1].map((fraction) => {
+      const y = padding.top + plotHeight - fraction * plotHeight;
+      const label = minValue + fraction * valueRange;
+      return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="deposit-chart-grid" /><text x="${padding.left - 8}" y="${y + 4}" text-anchor="end" class="deposit-chart-label">${Math.round(label / 1000)}k</text>`;
+    }).join('');
+    const pointsMarkup = coordinates.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="4" class="deposit-chart-dot"><title>${formatShortDate(point.date)}: ${point.balance.toLocaleString('ru-RU')} ₸</title></circle>`).join('');
+    const firstLabel = formatShortDate(points[0].date);
+    const lastLabel = formatShortDate(points[points.length - 1].date);
+
+    return `
+      <svg class="deposit-balance-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Изменение остатка депозита">
+        ${grid}
+        <polyline points="${polyline}" class="deposit-chart-line" />
+        ${pointsMarkup}
+        <text x="${padding.left}" y="${height - 9}" class="deposit-chart-label">${firstLabel}</text>
+        <text x="${width - padding.right}" y="${height - 9}" text-anchor="end" class="deposit-chart-label">${lastLabel}</text>
+      </svg>`;
+  }
+
   openDepositScheduleModal(depId) {
     const dep = this.state.accounts.find((a) => a.id === depId);
     if (!dep) return;
@@ -2054,8 +2202,9 @@ class BudgetApp {
     const title = document.getElementById('modal-dep-schedule-title');
     const body = document.getElementById('modal-dep-schedule-body');
 
-    title.textContent = `Прогноз дохода: ${dep.name}`;
+    title.textContent = `Движение депозита: ${dep.name}`;
     const balance = this.calculateAccountBalance(dep.id);
+    const history = this.getDepositBalanceHistory(dep);
 
     const forecast = calculateDepositForecast({
       principal: balance,
@@ -2066,7 +2215,13 @@ class BudgetApp {
     });
 
     body.innerHTML = `
+      <div class="deposit-history-panel">
+        <div class="deposit-history-title">Изменение остатка по реальным операциям</div>
+        ${this.buildDepositBalanceChart(history)}
+        <div class="deposit-history-caption">Точки появляются при открытии, пополнении, начислении процентов или снятии. Наведи на точку, чтобы увидеть дату и сумму.</div>
+      </div>
       <div style="margin-bottom: 12px; font-size: 13px;">
+        <div style="color: var(--text-muted); margin-bottom: 6px;">Прогноз по ставке BCC</div>
         <div>Текущая сумма: <strong class="amount-mono">${balance.toLocaleString('ru-RU')} ₸</strong></div>
         <div>Номинальная ставка: <strong>${dep.nominalRate}% годовых</strong></div>
         <div>Ожидаемый доход за срок: <strong class="text-green amount-mono">+${forecast.totalReward.toLocaleString('ru-RU')} ₸</strong></div>

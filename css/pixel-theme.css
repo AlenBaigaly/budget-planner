@@ -1064,6 +1064,74 @@ html, body {
   color: var(--text-dim);
 }
 
+.budget-range {
+  accent-color: var(--accent-amber);
+  cursor: pointer;
+  flex: 1 1 220px;
+  min-width: 180px;
+  height: 7px;
+}
+
+.budget-range::-webkit-slider-thumb {
+  cursor: grab;
+}
+
+.budget-range:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.deposit-history-panel {
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+.deposit-history-title {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.deposit-balance-chart {
+  width: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.deposit-chart-grid {
+  stroke: var(--border-color);
+  stroke-dasharray: 3 3;
+}
+
+.deposit-chart-line {
+  fill: none;
+  stroke: var(--accent-amber);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.deposit-chart-dot {
+  fill: var(--accent-green);
+  stroke: var(--bg-card);
+  stroke-width: 2;
+  cursor: help;
+}
+
+.deposit-chart-label {
+  fill: var(--text-dim);
+  font-size: 11px;
+}
+
+.deposit-history-caption {
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .pixel-input, .pixel-select, .pixel-textarea {
   background: var(--bg-input);
   border: 1px solid var(--border-color);
