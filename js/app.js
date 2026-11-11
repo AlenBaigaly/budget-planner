@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=22';
+} from './bcc-deposits.js?v=23';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=22';
+} from './analytics.js?v=23';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=22';
+} from './firebase-config.js?v=23';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -231,6 +231,12 @@ const DEFAULT_STATE = {
 };
 
 const STORAGE_KEY = 'budget_planner_state_v1';
+
+function compareTransactionsNewest(first, second) {
+  const dateComparison = String(second.date || '').localeCompare(String(first.date || ''));
+  if (dateComparison !== 0) return dateComparison;
+  return String(second.createdAt || second.id || '').localeCompare(String(first.createdAt || first.id || ''));
+}
 
 class BudgetApp {
   constructor() {
@@ -839,7 +845,7 @@ class BudgetApp {
     if (!container) return;
 
     const recent = [...this.state.transactions]
-      .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt))
+      .sort(compareTransactionsNewest)
       .slice(0, 4);
 
     if (recent.length === 0) {
@@ -1117,7 +1123,7 @@ class BudgetApp {
       txs = txs.filter((t) => (t.note || '').toLowerCase().includes(searchFilter));
     }
 
-    txs.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+    txs.sort(compareTransactionsNewest);
 
     if (txs.length === 0) {
       listEl.innerHTML = `
@@ -1309,6 +1315,7 @@ class BudgetApp {
     const accFrom = document.getElementById('tx-input-account');
     const accTo = document.getElementById('tx-input-to-account');
     const accToRow = document.getElementById('tx-row-to-account');
+    const accountLabel = document.getElementById('tx-account-label');
     const catSelect = document.getElementById('tx-input-category');
     const catRow = document.getElementById('tx-row-category');
     const amtInput = document.getElementById('tx-input-amount');
@@ -1318,7 +1325,13 @@ class BudgetApp {
 
     accFrom.innerHTML = this.state.accounts.map((a) => `<option value="${a.id}">${a.icon || '💰'} ${a.name} (${this.calculateAccountBalance(a.id).toLocaleString('ru-RU')} ₸)</option>`).join('');
     accTo.innerHTML = accFrom.innerHTML;
-    catSelect.innerHTML = this.state.categories.map((c) => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+    const populateCategories = (type, preferredCategoryId = '') => {
+      const categories = this.state.categories.filter((category) => category.type === type);
+      catSelect.innerHTML = categories.map((category) => `<option value="${category.id}">${category.icon} ${category.name}</option>`).join('');
+      if (categories.some((category) => category.id === preferredCategoryId)) {
+        catSelect.value = preferredCategoryId;
+      }
+    };
 
     let currentType = 'expense';
 
@@ -1331,7 +1344,7 @@ class BudgetApp {
         dateInput.value = tx.date;
         accFrom.value = tx.accountId;
         if (tx.toAccountId) accTo.value = tx.toAccountId;
-        if (tx.categoryId) catSelect.value = tx.categoryId;
+        if (tx.categoryId) catSelect.dataset.preferredCategoryId = tx.categoryId;
         noteInput.value = tx.note || '';
         if (statusSelect) statusSelect.value = tx.status || 'confirmed';
       }
@@ -1356,9 +1369,13 @@ class BudgetApp {
       if (type === 'transfer') {
         accToRow.classList.remove('hidden');
         catRow.classList.add('hidden');
+        if (accountLabel) accountLabel.textContent = 'Счёт списания (отправитель)';
       } else {
         accToRow.classList.add('hidden');
         catRow.classList.remove('hidden');
+        if (accountLabel) accountLabel.textContent = type === 'income' ? 'Счёт зачисления' : 'Счёт списания';
+        populateCategories(type, catSelect.dataset.preferredCategoryId || catSelect.value);
+        catSelect.dataset.preferredCategoryId = '';
       }
     };
 
@@ -1667,7 +1684,7 @@ class BudgetApp {
     title.textContent = `История: ${acc.name}`;
 
     const accTxs = this.state.transactions.filter((t) => t.accountId === accId || t.toAccountId === accId);
-    accTxs.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+    accTxs.sort(compareTransactionsNewest);
 
     if (accTxs.length === 0) {
       listEl.innerHTML = '<div class="text-center text-dim" style="padding: 20px;">По этому счёту ещё нет операций</div>';

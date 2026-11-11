@@ -571,7 +571,7 @@
 
           <div class="form-row two-col">
             <div class="form-group">
-              <label class="form-label">Счёт списания</label>
+              <label id="tx-account-label" class="form-label">Счёт списания</label>
               <select id="tx-input-account" class="pixel-select"></select>
             </div>
             <div class="form-group">
@@ -932,10 +932,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=22"></script>
-  <script type="module" src="./js/analytics.js?v=22"></script>
-  <script type="module" src="./js/firebase-config.js?v=22"></script>
-  <script type="module" src="./js/app.js?v=22"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=23"></script>
+  <script type="module" src="./js/analytics.js?v=23"></script>
+  <script type="module" src="./js/firebase-config.js?v=23"></script>
+  <script type="module" src="./js/app.js?v=23"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1047,7 +1047,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=22');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=23');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
