@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=23';
+} from './bcc-deposits.js?v=24';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=23';
+} from './analytics.js?v=24';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=23';
+} from './firebase-config.js?v=24';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -236,6 +236,24 @@ function compareTransactionsNewest(first, second) {
   const dateComparison = String(second.date || '').localeCompare(String(first.date || ''));
   if (dateComparison !== 0) return dateComparison;
   return String(second.createdAt || second.id || '').localeCompare(String(first.createdAt || first.id || ''));
+}
+
+function formatTransactionTime(transaction) {
+  if (!transaction.createdAt) return '';
+
+  const createdAt = new Date(transaction.createdAt);
+  if (Number.isNaN(createdAt.getTime())) return '';
+
+  return createdAt.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function formatTransactionMeta(transaction, accountLabel) {
+  return [transaction.date, formatTransactionTime(transaction), accountLabel]
+    .filter(Boolean)
+    .join(' • ');
 }
 
 class BudgetApp {
@@ -868,7 +886,7 @@ class BudgetApp {
             <span style="font-size: 16px;">${cat?.icon || (isTransfer ? '🔁' : '💵')}</span>
             <div class="tx-details">
               <span class="tx-title" style="font-size: 12px;">${tx.note || cat?.name || (isTransfer ? 'Перевод' : 'Операция')}</span>
-              <span class="tx-meta" style="font-size: 10px;">${tx.date} • ${acc?.name || 'Счёт'}</span>
+              <span class="tx-meta" style="font-size: 10px;">${formatTransactionMeta(tx, acc?.name || 'Счёт')}</span>
             </div>
           </div>
           <div class="tx-amount ${colorClass}" style="font-size: 13px;">${sign}${Number(tx.amount).toLocaleString('ru-RU')} ₸</div>
@@ -1157,19 +1175,19 @@ class BudgetApp {
       if (tx.type === 'income') {
         icon = cat?.icon || '📈';
         title = cat?.name || tx.note || 'Доход';
-        metaStr = `${tx.date} • ${accFrom?.name || 'Удалённый счёт'}`;
+        metaStr = formatTransactionMeta(tx, accFrom?.name || 'Удалённый счёт');
         amountClass = 'income';
         sign = '+';
       } else if (tx.type === 'expense') {
         icon = cat?.icon || '🛒';
         title = cat?.name || tx.note || 'Расход';
-        metaStr = `${tx.date} • ${accFrom?.name || 'Удалённый счёт'}`;
+        metaStr = formatTransactionMeta(tx, accFrom?.name || 'Удалённый счёт');
         amountClass = 'expense';
         sign = '-';
       } else if (tx.type === 'transfer') {
         icon = '🔁';
         title = 'Перевод между счетами';
-        metaStr = `${tx.date} • ${accFrom?.name || 'Удалённый счёт'} ➔ ${accTo?.name || 'Удалённый счёт'}`;
+        metaStr = formatTransactionMeta(tx, `${accFrom?.name || 'Удалённый счёт'} ➔ ${accTo?.name || 'Удалённый счёт'}`);
         amountClass = 'transfer';
         sign = '⇄';
       }
@@ -1713,7 +1731,7 @@ class BudgetApp {
           <div class="tx-item" style="padding: 8px 10px;">
             <div>
               <div style="font-size: 13px; font-weight: 600; color: #fff;">${detail}</div>
-              <div style="font-size: 11px; color: var(--text-dim);">${tx.date}</div>
+              <div style="font-size: 11px; color: var(--text-dim);">${[tx.date, formatTransactionTime(tx)].filter(Boolean).join(' • ')}</div>
             </div>
             <div class="tx-amount ${colorClass}">${sign}${Number(tx.amount).toLocaleString('ru-RU')} ₸</div>
           </div>
