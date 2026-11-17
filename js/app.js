@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=24';
+} from './bcc-deposits.js?v=25';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=24';
+} from './analytics.js?v=25';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=24';
+} from './firebase-config.js?v=25';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -577,6 +577,7 @@ class BudgetApp {
     this.bindCategoryForm();
     this.bindRecurringForm();
     this.bindDepositInterestForm();
+    this.bindCloseDepositForm();
     this.bindSettingsForm();
     this.bindBackupRestore();
   }
@@ -886,7 +887,7 @@ class BudgetApp {
             <span style="font-size: 16px;">${cat?.icon || (isTransfer ? '🔁' : '💵')}</span>
             <div class="tx-details">
               <span class="tx-title" style="font-size: 12px;">${tx.note || cat?.name || (isTransfer ? 'Перевод' : 'Операция')}</span>
-              <span class="tx-meta" style="font-size: 10px;">${formatTransactionMeta(tx, acc?.name || 'Счёт')}</span>
+              <span class="tx-meta" style="font-size: 10px;">${formatTransactionMeta(tx, acc?.name || tx.accountName || 'Счёт')}</span>
             </div>
           </div>
           <div class="tx-amount ${colorClass}" style="font-size: 13px;">${sign}${Number(tx.amount).toLocaleString('ru-RU')} ₸</div>
@@ -1175,19 +1176,19 @@ class BudgetApp {
       if (tx.type === 'income') {
         icon = cat?.icon || '📈';
         title = cat?.name || tx.note || 'Доход';
-        metaStr = formatTransactionMeta(tx, accFrom?.name || 'Удалённый счёт');
+        metaStr = formatTransactionMeta(tx, accFrom?.name || tx.accountName || 'Удалённый счёт');
         amountClass = 'income';
         sign = '+';
       } else if (tx.type === 'expense') {
         icon = cat?.icon || '🛒';
         title = cat?.name || tx.note || 'Расход';
-        metaStr = formatTransactionMeta(tx, accFrom?.name || 'Удалённый счёт');
+        metaStr = formatTransactionMeta(tx, accFrom?.name || tx.accountName || 'Удалённый счёт');
         amountClass = 'expense';
         sign = '-';
       } else if (tx.type === 'transfer') {
         icon = '🔁';
         title = 'Перевод между счетами';
-        metaStr = formatTransactionMeta(tx, `${accFrom?.name || 'Удалённый счёт'} ➔ ${accTo?.name || 'Удалённый счёт'}`);
+        metaStr = formatTransactionMeta(tx, `${accFrom?.name || tx.accountName || 'Удалённый счёт'} ➔ ${accTo?.name || tx.toAccountName || 'Удалённый счёт'}`);
         amountClass = 'transfer';
         sign = '⇄';
       }
@@ -1719,11 +1720,11 @@ class BudgetApp {
           if (tx.toAccountId === accId) {
             sign = '+';
             colorClass = 'income';
-            detail = `Перевод из ${this.state.accounts.find((a) => a.id === tx.accountId)?.name || 'счёта'}`;
+            detail = `Перевод из ${this.state.accounts.find((a) => a.id === tx.accountId)?.name || tx.accountName || 'счёта'}`;
           } else {
             sign = '-';
             colorClass = 'expense';
-            detail = `Перевод на ${this.state.accounts.find((a) => a.id === tx.toAccountId)?.name || 'счёт'}`;
+            detail = `Перевод на ${this.state.accounts.find((a) => a.id === tx.toAccountId)?.name || tx.toAccountName || 'счёт'}`;
           }
         }
 
@@ -1958,6 +1959,9 @@ class BudgetApp {
               <button class="pixel-btn pixel-btn-sm pixel-btn-green btn-topup-dep" data-id="${dep.id}">
                 + Пополнить
               </button>
+              <button class="pixel-btn pixel-btn-sm pixel-btn-red btn-close-dep" data-id="${dep.id}">
+                Закрыть вклад
+              </button>
             </div>
             <div class="d-flex gap-2">
               <button class="pixel-btn pixel-btn-sm btn-dep-schedule" data-id="${dep.id}">График</button>
@@ -1978,6 +1982,12 @@ class BudgetApp {
     container.querySelectorAll('.btn-topup-dep').forEach((btn) => {
       btn.addEventListener('click', () => {
         this.openTopUpModal(btn.dataset.id);
+      });
+    });
+
+    container.querySelectorAll('.btn-close-dep').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.openCloseDepositModal(btn.dataset.id);
       });
     });
 
@@ -2075,6 +2085,80 @@ class BudgetApp {
     document.getElementById('interest-modal-dep-id').value = depId;
 
     this.openModal('modal-deposit-interest');
+  }
+
+  openCloseDepositModal(depId) {
+    const dep = this.state.accounts.find((account) => account.id === depId && account.type === 'deposit');
+    if (!dep) return;
+
+    const targetAccounts = this.state.accounts.filter((account) => account.type !== 'deposit');
+    if (targetAccounts.length === 0) {
+      this.showToast('Сначала создайте обычный счёт, на который можно перевести деньги.', 'error');
+      return;
+    }
+
+    const balance = this.calculateAccountBalance(depId);
+    document.getElementById('close-deposit-id').value = depId;
+    document.getElementById('close-deposit-name').textContent = `${dep.icon || '🏦'} ${dep.name}`;
+    document.getElementById('close-deposit-amount').textContent = `${balance.toLocaleString('ru-RU')} ₸`;
+
+    const targetSelect = document.getElementById('close-deposit-target');
+    targetSelect.innerHTML = targetAccounts.map((account) => (
+      `<option value="${account.id}">${account.icon || '💳'} ${account.name} — ${this.calculateAccountBalance(account.id).toLocaleString('ru-RU')} ₸</option>`
+    )).join('');
+
+    this.openModal('modal-close-deposit');
+  }
+
+  bindCloseDepositForm() {
+    document.getElementById('btn-confirm-close-deposit')?.addEventListener('click', () => {
+      const depId = document.getElementById('close-deposit-id').value;
+      const targetId = document.getElementById('close-deposit-target').value;
+      const dep = this.state.accounts.find((account) => account.id === depId && account.type === 'deposit');
+      const target = this.state.accounts.find((account) => account.id === targetId && account.type !== 'deposit');
+
+      if (!dep || !target) {
+        this.showToast('Выберите доступный счёт для перевода.', 'error');
+        return;
+      }
+
+      const amount = this.calculateAccountBalance(depId);
+      if (amount < 0) {
+        this.showToast('Нельзя закрыть вклад с отрицательным остатком.', 'error');
+        return;
+      }
+
+      const now = new Date();
+      this.state.transactions.push({
+        id: 'tx_close_dep_' + Date.now(),
+        type: 'transfer',
+        amount,
+        date: now.toISOString().split('T')[0],
+        accountId: dep.id,
+        toAccountId: target.id,
+        accountName: dep.name,
+        toAccountName: target.name,
+        categoryId: null,
+        note: `Закрытие депозита «${dep.name}»`,
+        status: 'confirmed',
+        createdAt: now.toISOString()
+      });
+
+      this.state.accounts = this.state.accounts.filter((account) => account.id !== dep.id);
+      this.state.goals = this.state.goals.map((goal) => ({
+        ...goal,
+        linkedAccountIds: (goal.linkedAccountIds || []).filter((accountId) => accountId !== dep.id)
+      }));
+      this.state.recurring = (this.state.recurring || []).map((rec) => (
+        rec.accountId === dep.id ? { ...rec, accountId: null, status: 'paused' } : rec
+      ));
+
+      this.logActivity(`Закрыт вклад «${dep.name}»: ${amount.toLocaleString('ru-RU')} ₸ переведено на «${target.name}»`, 'warning');
+      this.saveState();
+      this.closeModal('modal-close-deposit');
+      this.render();
+      this.showToast(`Вклад закрыт: ${amount.toLocaleString('ru-RU')} ₸ переведено на «${target.name}»`, 'success');
+    });
   }
 
   bindDepositInterestForm() {

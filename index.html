@@ -738,7 +738,37 @@
       </div>
     </div>
 
-    <!-- 4. Accrue Interest Modal (Зачислить проценты) -->
+    <!-- 4. Close BCC Deposit Modal -->
+    <div id="modal-close-deposit" class="modal-overlay">
+      <div class="modal-box" style="max-width: 460px;">
+        <div class="modal-header">
+          <span class="modal-title">Закрыть вклад BCC</span>
+          <button class="modal-close" data-modal-close>✕</button>
+        </div>
+        <input type="hidden" id="close-deposit-id">
+        <div class="disclaimer-box" style="margin-bottom: 16px;">
+          Это действие только для учёта в планировщике: деньги в приложении будут переведены на выбранный счёт. В BCC банковский перевод нужно выполнить отдельно.
+        </div>
+        <div class="form-group">
+          <label class="form-label">Закрываемый вклад</label>
+          <div id="close-deposit-name" class="pixel-input" style="display:flex; align-items:center; min-height: 42px;"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Сумма к переводу</label>
+          <div id="close-deposit-amount" class="pixel-input amount-mono" style="display:flex; align-items:center; min-height: 42px;"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Перевести на счёт</label>
+          <select id="close-deposit-target" class="pixel-select"></select>
+        </div>
+        <div class="mt-4 d-flex justify-between">
+          <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
+          <button type="button" id="btn-confirm-close-deposit" class="pixel-btn pixel-btn-red">Закрыть и перевести</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Accrue Interest Modal (Зачислить проценты) -->
     <div id="modal-deposit-interest" class="modal-overlay">
       <div class="modal-box">
         <div class="modal-header">
@@ -932,10 +962,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=24"></script>
-  <script type="module" src="./js/analytics.js?v=24"></script>
-  <script type="module" src="./js/firebase-config.js?v=24"></script>
-  <script type="module" src="./js/app.js?v=24"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=25"></script>
+  <script type="module" src="./js/analytics.js?v=25"></script>
+  <script type="module" src="./js/firebase-config.js?v=25"></script>
+  <script type="module" src="./js/app.js?v=25"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1047,7 +1077,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=24');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=25');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
