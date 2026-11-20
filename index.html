@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
 
   <!-- Theme Stylesheet (Manrope + JetBrains Mono) -->
-  <link rel="stylesheet" href="./css/pixel-theme.css?v=27">
+  <link rel="stylesheet" href="./css/pixel-theme.css">
 </head>
 <body>
   <div id="app">
@@ -962,10 +962,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=27"></script>
-  <script type="module" src="./js/analytics.js?v=27"></script>
-  <script type="module" src="./js/firebase-config.js?v=27"></script>
-  <script type="module" src="./js/app.js?v=27"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=26"></script>
+  <script type="module" src="./js/analytics.js?v=26"></script>
+  <script type="module" src="./js/firebase-config.js?v=26"></script>
+  <script type="module" src="./js/app.js?v=26"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1077,7 +1077,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=27');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=26');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
