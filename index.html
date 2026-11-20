@@ -6,7 +6,7 @@
   <title>Budget Planner — Планировщик бюджета</title>
   
   <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#0b0d13">
+  <meta name="theme-color" content="#12080e">
   <meta name="description" content="Минималистичный планировщик личного бюджета в Казахстане с поддержкой депозитов BCC, целей и оффлайн-режима">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
@@ -962,10 +962,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=25"></script>
-  <script type="module" src="./js/analytics.js?v=25"></script>
-  <script type="module" src="./js/firebase-config.js?v=25"></script>
-  <script type="module" src="./js/app.js?v=25"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=26"></script>
+  <script type="module" src="./js/analytics.js?v=26"></script>
+  <script type="module" src="./js/firebase-config.js?v=26"></script>
+  <script type="module" src="./js/app.js?v=26"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1077,7 +1077,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=25');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=26');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);

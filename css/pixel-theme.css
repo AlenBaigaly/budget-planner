@@ -1468,3 +1468,213 @@ html, body {
 .d-flex { display: flex; }
 .justify-between { justify-content: space-between; }
 .align-center { align-items: center; }
+
+/* ========================================================================
+   NIGHT CITY PIXEL THEME
+   A finance-focused retro interface: original CSS artwork, no third-party
+   branding or copied event assets.
+   ======================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg-dark: #12080e;
+  --bg-card: #2a121c;
+  --bg-card-hover: #3a1725;
+  --bg-card-subtle: #1d0d15;
+  --bg-input: #160a10;
+  --border-color: #653142;
+  --border-light: #8b4a5c;
+  --border-focus: #e07a5f;
+  --accent-amber: #f3aa57;
+  --accent-amber-subtle: rgba(243, 170, 87, 0.13);
+  --accent-amber-border: rgba(243, 170, 87, 0.45);
+  --accent-green: #69d370;
+  --accent-green-subtle: rgba(105, 211, 112, 0.13);
+  --accent-green-border: rgba(105, 211, 112, 0.38);
+  --accent-red: #f06467;
+  --accent-red-subtle: rgba(240, 100, 103, 0.14);
+  --accent-red-border: rgba(240, 100, 103, 0.42);
+  --accent-blue: #8d9df9;
+  --accent-blue-subtle: rgba(141, 157, 249, 0.14);
+  --text-main: #fff4eb;
+  --text-muted: #d7adb6;
+  --text-dim: #a77280;
+  --font-ui: 'Pixelify Sans', 'Trebuchet MS', sans-serif;
+  --font-mono: 'Space Mono', 'JetBrains Mono', monospace;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-card: 0 8px 0 rgba(40, 8, 19, 0.42), 0 18px 36px rgba(0, 0, 0, 0.32);
+}
+
+html, body {
+  background-color: var(--bg-dark);
+  background-image:
+    radial-gradient(circle at 14% 12%, rgba(224, 122, 95, 0.24) 0 2px, transparent 3px),
+    radial-gradient(circle at 76% 7%, rgba(243, 170, 87, 0.22) 0 1px, transparent 2px),
+    radial-gradient(circle at 38% 34%, rgba(255, 221, 177, 0.13) 0 1px, transparent 2px),
+    repeating-linear-gradient(90deg, rgba(255, 139, 116, 0.045) 0 1px, transparent 1px 6px),
+    linear-gradient(180deg, #13080f 0%, #200c16 50%, #10070d 100%);
+  background-attachment: fixed;
+  font-size: 15px;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: auto 0 0;
+  height: 135px;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.42;
+  background:
+    linear-gradient(90deg, transparent 0 4%, #431a29 4% 7%, transparent 7% 11%, #351421 11% 15%, transparent 15% 19%, #4a1b2a 19% 25%, transparent 25% 29%, #32131f 29% 34%, transparent 34% 40%, #4b1b29 40% 47%, transparent 47% 52%, #341421 52% 57%, transparent 57% 64%, #4d1c2a 64% 71%, transparent 71% 77%, #35141f 77% 84%, transparent 84% 89%, #451928 89% 95%, transparent 95%);
+  clip-path: polygon(0 42%, 4% 42%, 4% 10%, 7% 10%, 7% 55%, 11% 55%, 11% 22%, 15% 22%, 15% 38%, 19% 38%, 19% 0, 25% 0, 25% 48%, 29% 48%, 29% 17%, 34% 17%, 34% 65%, 40% 65%, 40% 6%, 47% 6%, 47% 49%, 52% 49%, 52% 20%, 57% 20%, 57% 56%, 64% 56%, 64% 5%, 71% 5%, 71% 43%, 77% 43%, 77% 26%, 84% 26%, 84% 62%, 89% 62%, 89% 13%, 95% 13%, 95% 40%, 100% 40%, 100% 100%, 0 100%);
+}
+
+.top-header {
+  background: rgba(25, 9, 16, 0.9);
+  border-bottom-color: rgba(166, 78, 96, 0.5);
+  box-shadow: 0 7px 26px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+}
+
+.logo-icon {
+  border: 1px solid #efaa84;
+  box-shadow: 3px 3px 0 #671f35;
+}
+
+.logo-text, .card-title, .modal-title { letter-spacing: 0.4px; }
+.logo-sub { color: #c78797; }
+
+.period-picker,
+.quick-toolbar,
+.sub-tabs-bar,
+.filter-bar,
+.chart-wrapper,
+.goal-accounts-checklist {
+  background: rgba(36, 13, 23, 0.88);
+  border-color: var(--border-color);
+}
+
+.nav-link {
+  border-radius: 4px;
+  color: #dcb5bd;
+}
+
+.nav-link:hover, .nav-link.active {
+  background: #4a1b2b;
+  border-color: #a95465;
+  color: #fff5e9;
+}
+
+.pixel-card,
+.bcc-card,
+.goal-card,
+.calendar-card,
+.quick-toolbar,
+.compact-stat-card,
+.modal-box {
+  background: linear-gradient(145deg, rgba(55, 22, 34, 0.97), rgba(32, 11, 21, 0.98));
+  border-color: #6c3446;
+  box-shadow: var(--shadow-card);
+}
+
+.pixel-card, .bcc-card, .goal-card, .quick-toolbar, .compact-stat-card, .tx-item, .modal-box {
+  border-radius: 8px;
+}
+
+.compact-stat-card {
+  position: relative;
+  overflow: hidden;
+  border-left-width: 4px;
+}
+
+.compact-stat-card::after {
+  content: '';
+  position: absolute;
+  right: -18px;
+  top: -18px;
+  width: 58px;
+  height: 58px;
+  border: 6px solid color-mix(in srgb, var(--stat-border) 30%, transparent);
+  border-radius: 50%;
+}
+
+.compact-stat-label, .card-title, .form-label { color: #e7b9be; }
+.compact-stat-sub, .tx-meta, .logo-sub { color: #bd8e99; }
+
+.pixel-btn {
+  border-radius: 4px;
+  border-color: #874355;
+  background: #431827;
+  color: #fff4eb;
+  box-shadow: 3px 3px 0 rgba(18, 5, 10, 0.65);
+}
+
+.pixel-btn:hover {
+  background: #612337;
+  border-color: #dc816d;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 rgba(18, 5, 10, 0.68);
+}
+
+.pixel-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 rgba(18, 5, 10, 0.65);
+}
+
+.pixel-btn-amber { background: #df7658; border-color: #f3aa78; color: #261016; }
+.pixel-btn-amber:hover { background: #f18e68; border-color: #ffd0a4; }
+.pixel-btn-green { background: #53b967; border-color: #9be699; color: #0d2213; }
+.pixel-btn-green:hover { background: #69d370; }
+.pixel-btn-red { background: #bd4856; border-color: #f28a80; }
+.pixel-btn-red:hover { background: #df5c62; }
+.pixel-btn-cyan { background: #626ecc; border-color: #aeb4ff; }
+.pixel-btn-cyan:hover { background: #7886e5; }
+
+.tx-item,
+.account-pill,
+.rate-badge,
+.pixel-input,
+.pixel-select,
+.type-toggle-group,
+.deposit-badge,
+.status-badge {
+  background: rgba(27, 9, 17, 0.84);
+  border-color: #633043;
+}
+
+.tx-item:hover, .account-pill:hover {
+  background: #431827;
+  border-color: #ba5968;
+}
+
+.tx-category-icon {
+  background: #421827;
+  border-color: #834051;
+  box-shadow: inset 2px 2px 0 rgba(255, 215, 190, 0.06);
+}
+
+.pixel-input, .pixel-select {
+  color: #fff4eb;
+  font-size: 14px;
+}
+
+.pixel-input:focus, .pixel-select:focus {
+  border-color: #f0a06f;
+  box-shadow: 0 0 0 3px rgba(224, 122, 95, 0.2);
+}
+
+.modal-overlay { background: rgba(12, 3, 8, 0.78); backdrop-filter: blur(4px); }
+.modal-box { border-color: #a95163; box-shadow: 0 16px 0 rgba(20, 5, 11, 0.35), 0 28px 56px rgba(0,0,0,0.62); }
+.disclaimer-box { background: rgba(117, 52, 42, 0.42); border-left-color: #df7658; color: #f0c8b7; }
+
+.pixel-progress, .allocation-bar, .peak-track { background: #180811; border: 1px solid rgba(154, 67, 86, 0.5); }
+.pixel-progress-bar.warning { background: #df7658; }
+
+@media (max-width: 899px) {
+  .mobile-nav { background: rgba(28, 9, 17, 0.97); border-top-color: #743749; }
+  .mobile-nav-btn.active { color: #f5a070; }
+}
