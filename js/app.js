@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=29';
+} from './bcc-deposits.js?v=28';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=29';
+} from './analytics.js?v=28';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=29';
+} from './firebase-config.js?v=28';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
@@ -262,7 +262,6 @@ class BudgetApp {
     this.editingTxId = null;
     this.editingAccountId = null;
     this.editingGoalId = null;
-    this.dashboardDeckIndex = 0;
     this.editingRecurringId = null;
     this.pendingConfirmAction = null;
     this.init();
@@ -994,33 +993,7 @@ class BudgetApp {
       return;
     }
 
-    const cardAccounts = this.state.accounts.filter((acc) => acc.type === 'card' || acc.type === 'savings');
-    const otherAccounts = this.state.accounts.filter((acc) => acc.type !== 'card' && acc.type !== 'savings');
-
-    if (cardAccounts.length > 0) {
-      this.dashboardDeckIndex = ((this.dashboardDeckIndex % cardAccounts.length) + cardAccounts.length) % cardAccounts.length;
-    } else {
-      this.dashboardDeckIndex = 0;
-    }
-
-    const cardThemes = ['graphite', 'forest', 'burgundy', 'ocean'];
-    const relativePosition = (index) => (index - this.dashboardDeckIndex + cardAccounts.length) % cardAccounts.length;
-    const deckHtml = cardAccounts.length ? cardAccounts.map((acc, index) => {
-      const balance = this.calculateAccountBalance(acc.id);
-      const position = Math.min(relativePosition(index), 2);
-      const theme = cardThemes[index % cardThemes.length];
-      return `
-        <button class="aqsha-bank-card aqsha-card-pos-${position} ${theme}" type="button" data-acc-id="${acc.id}" data-card-index="${index}" aria-label="Открыть историю счёта ${acc.name}">
-          <span class="aqsha-card-top"><span>${acc.name}</span><span class="aqsha-card-brand">${acc.icon || '💳'}</span></span>
-          <span class="aqsha-card-chip"></span>
-          <span class="aqsha-card-balance-label">Текущий баланс</span>
-          <strong>${balance.toLocaleString('ru-RU')} ₸</strong>
-          <span class="aqsha-card-bottom"><span>БАНКОВСКАЯ КАРТА</span><span>••••</span></span>
-        </button>
-      `;
-    }).join('') : `<div class="aqsha-empty-deck">Добавь банковскую карту, чтобы она появилась здесь.</div>`;
-
-    const assetHtml = otherAccounts.map((acc) => {
+    container.innerHTML = this.state.accounts.map((acc) => {
       const balance = this.calculateAccountBalance(acc.id);
       const typeLabel = {
         cash: 'Наличные',
@@ -1030,49 +1003,24 @@ class BudgetApp {
       }[acc.type] || 'Счёт';
 
       return `
-        <button class="aqsha-asset-card ${acc.type === 'deposit' ? 'deposit' : ''} ${acc.excludeFromTotal ? 'excluded' : ''}" type="button" data-acc-id="${acc.id}">
-          <span class="aqsha-asset-icon">${acc.icon || '💰'}</span>
-          <span class="aqsha-asset-copy"><strong>${acc.name}</strong><small>${typeLabel} ${acc.excludeFromTotal ? '· вне баланса' : ''}</small></span>
-          <span class="aqsha-asset-balance">${balance.toLocaleString('ru-RU')} ₸</span>
-        </button>
-      `;
-    }).join('') || `<div class="aqsha-empty-assets">Наличные и депозиты появятся здесь.</div>`;
-
-    container.innerHTML = `
-      <div class="aqsha-deck-panel">
-        <div class="aqsha-panel-heading">
-          <div><span>Банковские карты</span><small>Выбери карту, чтобы открыть историю</small></div>
-          <div class="aqsha-deck-controls">
-            <button type="button" class="aqsha-deck-prev" aria-label="Предыдущая карта">‹</button>
-            <button type="button" class="aqsha-deck-next" aria-label="Следующая карта">›</button>
+        <div class="account-pill ${acc.excludeFromTotal ? 'excluded' : ''}" data-acc-id="${acc.id}">
+          <div class="account-info">
+            <span class="account-icon">${acc.icon || '💰'}</span>
+            <div>
+              <div class="account-name">${acc.name}</div>
+              <div class="account-type-tag">${typeLabel} ${acc.excludeFromTotal ? '(вне баланса)' : ''}</div>
+            </div>
+          </div>
+          <div class="account-balance">
+            ${balance.toLocaleString('ru-RU')} ₸
           </div>
         </div>
-        <div class="aqsha-card-deck">${deckHtml}</div>
-        <div class="aqsha-deck-footer"><span class="aqsha-deck-dots">${cardAccounts.map((_, index) => `<i class="${index === this.dashboardDeckIndex ? 'active' : ''}"></i>`).join('')}</span><button type="button" class="aqsha-all-accounts">Все счета</button></div>
-      </div>
-      <div class="aqsha-assets-panel">
-        <div class="aqsha-panel-heading"><div><span>Накопления и наличные</span><small>Без имитации пластиковой карты</small></div></div>
-        <div class="aqsha-asset-list">${assetHtml}</div>
-      </div>
-    `;
+      `;
+    }).join('');
 
-    const updateDeck = (step) => {
-      if (!cardAccounts.length) return;
-      this.dashboardDeckIndex = (this.dashboardDeckIndex + step + cardAccounts.length) % cardAccounts.length;
-      this.renderDashboardAccounts();
-    };
-    container.querySelector('.aqsha-deck-prev')?.addEventListener('click', () => updateDeck(-1));
-    container.querySelector('.aqsha-deck-next')?.addEventListener('click', () => updateDeck(1));
-    container.querySelector('.aqsha-all-accounts')?.addEventListener('click', () => this.switchTab('accounts'));
-    container.querySelectorAll('.aqsha-bank-card, .aqsha-asset-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        const cardIndex = Number(card.dataset.cardIndex);
-        if (Number.isInteger(cardIndex) && cardIndex !== this.dashboardDeckIndex) {
-          this.dashboardDeckIndex = cardIndex;
-          this.renderDashboardAccounts();
-          return;
-        }
-        this.openAccountHistoryModal(card.dataset.accId);
+    container.querySelectorAll('.account-pill').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        this.openAccountHistoryModal(pill.dataset.accId);
       });
     });
   }
@@ -1379,7 +1327,7 @@ class BudgetApp {
   }
 
   // Transaction Modal
-  openTransactionModal(txId = null, initialType = 'expense') {
+  openTransactionModal(txId = null) {
     this.editingTxId = txId;
     const title = document.getElementById('modal-tx-title');
     const typeGroup = document.getElementById('tx-type-group');
@@ -1404,7 +1352,7 @@ class BudgetApp {
       }
     };
 
-    let currentType = initialType;
+    let currentType = 'expense';
 
     if (txId) {
       const tx = this.state.transactions.find((t) => t.id === txId);

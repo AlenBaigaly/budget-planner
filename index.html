@@ -6,14 +6,14 @@
   <title>Budget Planner — Планировщик бюджета</title>
   
   <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#f6f4ed">
+  <meta name="theme-color" content="#f3eee6">
   <meta name="description" content="Минималистичный планировщик личного бюджета в Казахстане с поддержкой депозитов BCC, целей и оффлайн-режима">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
 
   <!-- Warm editorial theme -->
-  <link rel="stylesheet" href="./css/pixel-theme.css?v=29">
+  <link rel="stylesheet" href="./css/pixel-theme.css?v=28">
 </head>
 <body>
   <div id="app">
@@ -63,17 +63,6 @@
 
       <!-- ================= 1. TAB: DASHBOARD ================= -->
       <section id="tab-dashboard" class="tab-content">
-        <div class="aqsha-editorial-header">
-          <div>
-            <div class="aqsha-eyebrow">Личные финансы · текущий период</div>
-            <h1>Месяц — <em>одной цифрой.</em></h1>
-          </div>
-          <div class="aqsha-header-actions">
-            <button class="pixel-btn" onclick="app.openTransactionModal(null, 'transfer')">⇄ Перевод</button>
-            <button class="pixel-btn pixel-btn-dark" onclick="app.openTransactionModal()">+ Новый расход</button>
-          </div>
-        </div>
-
         <!-- Warning Alerts Container -->
         <div id="dash-alerts-container" class="alerts-container hidden"></div>
 
@@ -973,10 +962,10 @@
   </div>
 
   <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=29"></script>
-  <script type="module" src="./js/analytics.js?v=29"></script>
-  <script type="module" src="./js/firebase-config.js?v=29"></script>
-  <script type="module" src="./js/app.js?v=29"></script>
+  <script type="module" src="./js/bcc-deposits.js?v=28"></script>
+  <script type="module" src="./js/analytics.js?v=28"></script>
+  <script type="module" src="./js/firebase-config.js?v=28"></script>
+  <script type="module" src="./js/app.js?v=28"></script>
 
   <!-- Wire Inline Deposit Save -->
   <script>
@@ -1088,7 +1077,7 @@
           return;
         }
         try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=29');
+          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=28');
           const cfg = parseFirebaseConfigInput(raw);
           saveFirebaseConfig(cfg);
           await initFirebase(cfg);
