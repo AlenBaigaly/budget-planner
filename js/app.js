@@ -11,14 +11,14 @@ import {
   validateDepositWithdrawal,
   calculateMonthlyInterestAccrual,
   calculateNextPayoutDate
-} from './bcc-deposits.js?v=28';
+} from './bcc-deposits.js?v=25';
 
 import {
   drawPixelPieChart,
   drawPixelBarChart,
   calculateMonthComparison,
   MODERN_PALETTE
-} from './analytics.js?v=28';
+} from './analytics.js?v=25';
 
 import {
   initFirebase,
@@ -32,7 +32,7 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   parseFirebaseConfigInput
-} from './firebase-config.js?v=28';
+} from './firebase-config.js?v=25';
 
 // Realistic default state for personal finance in Kazakhstan
 const DEFAULT_STATE = {
