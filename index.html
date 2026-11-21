@@ -3,1093 +3,1135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Budget Planner — Планировщик бюджета</title>
-  
-  <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#0b0d13">
-  <meta name="description" content="Минималистичный планировщик личного бюджета в Казахстане с поддержкой депозитов BCC, целей и оффлайн-режима">
+  <title>AQSHA — Личный финансовый планировщик</title>
+
   <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#F6F4ED">
   <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
 
-  <!-- Theme Stylesheet (Manrope + JetBrains Mono) -->
-  <link rel="stylesheet" href="./css/pixel-theme.css">
+  <!-- Tailwind CSS via Google CDN -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:italic,normal@0,400;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+    :root {
+      --bg-cream: #F6F4ED;
+      --bg-surface: #FAF9F5;
+      --border-subtle: #E8E4DA;
+      --border-card: #DFDAD0;
+      --text-main: #171717;
+      --text-muted: #7E7B73;
+      --accent-green: #465948;
+    }
+
+    body {
+      background-color: var(--bg-cream);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .font-editorial {
+      font-family: 'Instrument Serif', Georgia, serif;
+    }
+
+    .font-mono-card {
+      font-family: 'Space Grotesk', monospace, sans-serif;
+      letter-spacing: 2px;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* 3D Bank Cards Stack (310px height, 100% OPAQUE) */
+    .card-deck-container {
+      perspective: 1200px;
+      height: 310px;
+      position: relative;
+    }
+
+    .bank-card {
+      position: absolute;
+      width: 100%;
+      max-width: 360px;
+      height: 220px;
+      border-radius: 24px;
+      padding: 22px 24px;
+      box-shadow: 0 18px 38px -10px rgba(0, 0, 0, 0.35), 0 4px 14px -2px rgba(0, 0, 0, 0.15);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      user-select: none;
+      transform-origin: center bottom;
+      overflow: hidden;
+      background-color: #1A1B1E !important; /* 100% Solid Opaque */
+    }
+
+    .bank-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0) 30%,
+        rgba(255, 255, 255, 0.12) 45%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(255, 255, 255, 0) 60%
+      );
+      transform: rotate(-10deg);
+      pointer-events: none;
+      transition: transform 0.6s ease;
+    }
+    .bank-card:hover::after {
+      transform: rotate(-10deg) translate(20%, 20%);
+    }
+
+    @media (min-width: 640px) {
+      .card-pos-0 {
+        z-index: 30 !important;
+        transform: translateY(0px) scale(1) rotate(0deg);
+        opacity: 1 !important;
+        filter: drop-shadow(0 20px 30px rgba(0,0,0,0.35));
+      }
+      .card-pos-1 {
+        z-index: 20 !important;
+        transform: translateY(22px) scale(0.95) rotate(2.5deg);
+        opacity: 1 !important;
+        filter: brightness(0.88);
+      }
+      .card-pos-2 {
+        z-index: 10 !important;
+        transform: translateY(44px) scale(0.90) rotate(-2.5deg);
+        opacity: 1 !important;
+        filter: brightness(0.76);
+      }
+      .card-pos-hidden {
+        z-index: 1 !important;
+        display: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    }
+
+    @media (max-width: 639px) {
+      .card-deck-container {
+        height: 235px;
+      }
+      .bank-card {
+        max-width: 100%;
+        height: 215px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: #1A1B1E !important;
+      }
+      .card-pos-0 {
+        z-index: 30 !important;
+        transform: translateX(0) scale(1);
+        opacity: 1 !important;
+      }
+      .card-pos-1, .card-pos-2, .card-pos-hidden {
+        display: none !important;
+      }
+    }
+
+    .emv-chip {
+      width: 42px;
+      height: 31px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #ECC876 0%, #E0B453 50%, #C49835 100%);
+      border: 1px solid rgba(138, 102, 28, 0.6);
+      position: relative;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    .emv-chip::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(120, 85, 20, 0.4);
+    }
+    .emv-chip::after {
+      content: '';
+      position: absolute;
+      left: 36%;
+      top: 0;
+      bottom: 0;
+      width: 12px;
+      border-left: 1px solid rgba(120, 85, 20, 0.4);
+      border-right: 1px solid rgba(120, 85, 20, 0.4);
+      border-radius: 3px;
+    }
+
+    .nav-btn.active {
+      background-color: #1A1A1A;
+      color: #FFFFFF;
+    }
+
+    .mob-nav-btn.active {
+      color: #171717;
+      font-weight: 700;
+    }
+    .mob-nav-btn.active .icon-pill {
+      background-color: #1A1A1A;
+      color: #FFFFFF;
+    }
+  </style>
 </head>
-<body>
-  <div id="app">
-    <!-- Top Header Bar -->
-    <header class="top-header">
-      <div class="header-inner">
-        <div class="logo-group">
-          <img src="./icons/icon.svg" alt="Budget Planner" class="logo-icon">
-          <div>
-            <div class="logo-text">Budget Planner</div>
-            <div class="logo-sub">Личные финансы и депозиты</div>
+<body class="min-h-screen flex flex-col md:flex-row pb-24 md:pb-0 selection:bg-[#465948] selection:text-white">
+
+  <!-- ============================================================== -->
+  <!-- 1. SIDEBAR: CLEAN REFINED WORKSPACES (SEPARATE SCREENS)        -->
+  <!-- ============================================================== -->
+  <aside class="hidden md:flex flex-col w-64 lg:w-72 border-r border-[#E8E4DA] bg-[#F6F4ED] h-screen sticky top-0 px-6 py-7 justify-between shrink-0">
+    <div>
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3 mb-10 px-2">
+        <div class="w-9 h-9 rounded-2xl bg-[#465948] flex items-center justify-center text-white font-bold text-sm shadow-xs">
+          A
+        </div>
+        <div>
+          <div class="font-extrabold text-lg tracking-tight lowercase">aqsha</div>
+          <div class="text-[11px] text-[#7E7B73] font-medium tracking-wide">Қазақстан • Финансы</div>
+        </div>
+      </div>
+
+      <!-- Main Navigation Workspaces -->
+      <nav class="space-y-2 text-xs font-semibold">
+        <!-- 1. Капитал & Главная -->
+        <button onclick="switchScreen('capital')" id="nav-capital" class="nav-btn active w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[#6B6860] hover:text-[#171717] hover:bg-[#EAE6DB] transition-all">
+          <span class="text-base">💳</span>
+          <div class="text-left">
+            <div class="leading-tight">Капитал & Счета</div>
+            <div class="text-[10px] text-neutral-400 font-normal">Карты, депозиты, сводка</div>
           </div>
-        </div>
+        </button>
 
-        <!-- Period selector -->
-        <div class="period-picker">
-          <button id="btn-period-prev" title="Предыдущий месяц">◀</button>
-          <span id="current-period-label" class="period-label">Ноябрь 2026</span>
-          <button id="btn-period-next" title="Следующий месяц">▶</button>
-          <button id="btn-period-toggle" class="pixel-btn-sm" style="margin-left: 2px;" title="Переключить месяц/год">Месяц</button>
-        </div>
+        <!-- 2. Журнал & Календарь -->
+        <button onclick="switchScreen('operations')" id="nav-operations" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[#6B6860] hover:text-[#171717] hover:bg-[#EAE6DB] transition-all">
+          <span class="text-base">🧾</span>
+          <div class="text-left">
+            <div class="leading-tight">Журнал & Платежи</div>
+            <div class="text-[10px] text-neutral-400 font-normal">Операции, регулярные</div>
+          </div>
+          <span class="ml-auto text-[10px] bg-[#E3DFD4] text-[#555] px-2 py-0.5 rounded-full" id="sidebar-tx-count">0</span>
+        </button>
 
-        <!-- Desktop Navigation Links -->
-        <nav class="desktop-nav">
-          <button class="nav-link active" data-tab="dashboard">Главная</button>
-          <button class="nav-link" data-tab="transactions">Операции</button>
-          <button class="nav-link" data-tab="accounts">Счета</button>
-          <button class="nav-link" data-tab="budget">Бюджет</button>
-          <button class="nav-link" data-tab="deposits">Депозиты BCC</button>
-          <button class="nav-link" data-tab="goals">Цели</button>
-          <button class="nav-link" data-tab="planning">Планирование</button>
-          <button class="nav-link" data-tab="analytics">Аналитика</button>
-          <button class="nav-link" data-tab="settings">Настройки</button>
-        </nav>
+        <!-- 3. Планирование & Аналитика -->
+        <button onclick="switchScreen('plan')" id="nav-plan" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[#6B6860] hover:text-[#171717] hover:bg-[#EAE6DB] transition-all">
+          <span class="text-base">🎯</span>
+          <div class="text-left">
+            <div class="leading-tight">План, Цели & Аналитика</div>
+            <div class="text-[10px] text-neutral-400 font-normal">Лимиты трат и отчёты</div>
+          </div>
+        </button>
+      </nav>
+    </div>
 
-        <!-- Auth and Quick Actions -->
-        <div class="d-flex align-center gap-2">
-          <button id="btn-quick-export" class="pixel-btn pixel-btn-sm" title="Быстрый экспорт JSON">💾 Экспорт</button>
-          <span id="user-auth-status" style="font-size: 12px;"></span>
-          <button id="btn-google-auth" class="pixel-btn pixel-btn-cyan pixel-btn-sm">Google Вход</button>
-        </div>
+    <!-- Quick Action & Settings -->
+    <div class="space-y-4">
+      <button onclick="openModal('tx', 'expense')" class="w-full py-3.5 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-2xl shadow-sm transition active:scale-[0.99] flex items-center justify-center gap-2">
+        <span>+</span> Новая операция
+      </button>
+
+      <button id="btn-google-auth" onclick="toggleGoogleAuth()" class="w-full py-2.5 bg-white border border-[#DFDAD0] hover:bg-[#EAE6DC] text-[#171717] text-xs font-semibold rounded-2xl transition">
+        Войти через Google
+      </button>
+
+      <div class="flex items-center justify-between p-3 bg-[#EAE6DC] rounded-2xl text-xs">
+        <button onclick="openSettingsModal()" class="flex items-center gap-2 text-[#171717] font-semibold hover:underline">
+          <span>⚙️</span> Настройки & Бэкап
+        </button>
+        <span class="text-[11px] font-bold text-[#465948]">₸ KZT</span>
+      </div>
+    </div>
+  </aside>
+
+
+  <!-- ============================================================== -->
+  <!-- MAIN CONTAINER WITH SEPARATE SCREENS                           -->
+  <!-- ============================================================== -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+    <!-- Mobile Top Header Bar -->
+    <header class="md:hidden sticky top-0 z-40 bg-[#F6F4ED]/95 backdrop-blur-md border-b border-[#E8E4DA] px-5 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-xl bg-[#465948] flex items-center justify-center text-white text-xs font-bold">A</div>
+        <span class="font-extrabold text-base lowercase tracking-tight">aqsha</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openModal('tx', 'expense')" class="bg-[#171717] text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-xs">
+          <span>+</span> Расход
+        </button>
+        <button onclick="openSettingsModal()" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs">
+          ⚙️
+        </button>
       </div>
     </header>
 
-    <!-- Main Container Content -->
-    <main class="container">
 
-      <!-- ================= 1. TAB: DASHBOARD ================= -->
-      <section id="tab-dashboard" class="tab-content">
-        <!-- Warning Alerts Container -->
-        <div id="dash-alerts-container" class="alerts-container hidden"></div>
+    <!-- ============================================================ -->
+    <!-- SCREEN 1: КАПИТАЛ & ГЛАВНАЯ (СЧЕТА, КАРТЫ, ДЕПОЗИТЫ)        -->
+    <!-- ============================================================ -->
+    <section id="workspace-capital" class="workspace-pane p-5 sm:p-8 lg:p-10 max-w-6xl mx-auto w-full space-y-8 animate-fadeIn">
 
-        <!-- Compact 5-Card Summary Strip -->
-        <div class="compact-summary-strip">
-          <div class="compact-stat-card income">
-            <span class="compact-stat-label">Доходы за период</span>
-            <span id="dash-income" class="compact-stat-value">+0 ₸</span>
-            <span class="compact-stat-sub">Фактические поступления</span>
+      <!-- Top Title Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E8E4DA] pb-5">
+        <div>
+          <div class="text-[11px] uppercase tracking-widest text-[#7E7B73] font-bold mb-1">
+            Капитал • Текущие счета и сбережения
           </div>
-          <div class="compact-stat-card expense">
-            <span class="compact-stat-label">Расходы за период</span>
-            <span id="dash-expense" class="compact-stat-value">-0 ₸</span>
-            <span class="compact-stat-sub">Подтверждённые траты</span>
-          </div>
-          <div class="compact-stat-card balance">
-            <span class="compact-stat-label">Остаток периода</span>
-            <span id="dash-remaining" class="compact-stat-value">0 ₸</span>
-            <span class="compact-stat-sub">Чистый денежный итог</span>
-          </div>
-          <div class="compact-stat-card free-cash">
-            <span class="compact-stat-label">Свободно до конца месяца</span>
-            <span id="dash-free-to-spend" class="compact-stat-value">0 ₸</span>
-            <span id="dash-free-sub" class="compact-stat-sub">С учётом платежей</span>
-          </div>
-          <div class="compact-stat-card net-worth">
-            <span class="compact-stat-label">Общий капитал</span>
-            <span id="dash-networth" class="compact-stat-value">0 ₸</span>
-            <span class="compact-stat-sub">На всех активных счетах</span>
-          </div>
+          <h1 class="font-editorial text-4xl sm:text-5xl lg:text-6xl text-[#171717] leading-none">
+            Месяц — <span class="text-[#465948] italic">одной цифрой.</span>
+          </h1>
         </div>
 
-        <!-- Quick Actions Toolbar -->
-        <div class="quick-toolbar">
-          <div style="font-weight: 600; font-size: 13px; color: var(--text-muted);">
-            Быстрые действия:
-          </div>
-          <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            <button id="btn-quick-add-tx" class="pixel-btn pixel-btn-green pixel-btn-sm">
-              <span>+</span> Новая операция
-            </button>
-            <button id="btn-quick-add-acc" class="pixel-btn pixel-btn-amber pixel-btn-sm">
-              <span>+</span> Создать счёт
-            </button>
-            <button id="btn-quick-add-rec" class="pixel-btn pixel-btn-sm">
-              <span>+</span> Регулярный платёж
-            </button>
-          </div>
+        <div class="flex items-center gap-2.5">
+          <button onclick="openModal('tx', 'transfer')" class="text-xs font-semibold px-4 py-2 bg-[#EAE6DC] hover:bg-[#E1DCD0] text-[#171717] rounded-full transition flex items-center gap-1.5">
+            <span>⇄</span> Перевод
+          </button>
+          <button onclick="openModal('tx', 'expense')" class="text-xs font-semibold px-5 py-2.5 bg-[#171717] hover:bg-black text-white rounded-full shadow-sm transition">
+            + Новый расход
+          </button>
         </div>
+      </div>
 
-        <!-- Two Column Grid for Accounts and Goals -->
-        <div class="form-row two-col">
-          <!-- Accounts Column with Allocation & Recent Transactions -->
-          <div class="d-flex" style="flex-direction: column; gap: 16px;">
-            <div class="pixel-card" style="margin-bottom: 0;">
-              <div class="card-title">
-                <span>Деньги по счетам</span>
-                <button class="pixel-btn pixel-btn-sm" onclick="app.switchTab('accounts')">Все счета →</button>
-              </div>
-              <div id="dash-accounts-list" class="accounts-grid"></div>
+      <!-- BLOCK 1: СТЕК БАНКОВСКИХ КАРТ (310px) + НАЛИЧНЫЕ И ДЕПОЗИТЫ BCC -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-              <!-- Capital Allocation Mini-bar -->
-              <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase;">
-                  Распределение капитала
-                </div>
-                <div id="dash-accounts-allocation" class="allocation-bar"></div>
-                <div id="dash-allocation-legend" class="allocation-legend"></div>
-              </div>
-            </div>
-
-            <!-- Recent Transactions Widget directly on dashboard -->
-            <div class="pixel-card" style="margin-bottom: 0;">
-              <div class="card-title">
-                <span>Последние операции</span>
-                <button class="pixel-btn pixel-btn-sm" onclick="app.switchTab('transactions')">Все операции →</button>
-              </div>
-              <div id="dash-recent-transactions" class="tx-list"></div>
-            </div>
-          </div>
-
-          <!-- Goals & Upcoming Column -->
-          <div class="d-flex" style="flex-direction: column; gap: 16px;">
-            <div class="pixel-card" style="margin-bottom: 0;">
-              <div class="card-title">
-                <span>Цели накоплений</span>
-                <button class="pixel-btn pixel-btn-sm" onclick="app.switchTab('goals')">Все цели →</button>
-              </div>
-              <div id="dash-goals-list"></div>
-            </div>
-
-            <!-- Upcoming payments timeline strip -->
-            <div class="pixel-card" style="margin-bottom: 0;">
-              <div class="card-title">
-                <span>Ближайшие платежи</span>
-                <button class="pixel-btn pixel-btn-sm" onclick="app.switchTab('planning')">Календарь →</button>
-              </div>
-              <div id="dash-upcoming-payments" class="timeline-calendar"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= 2. TAB: TRANSACTIONS ================= -->
-      <section id="tab-transactions" class="tab-content hidden">
-        <div class="pixel-card">
-          <div class="card-title">
-            <span>Журнал операций</span>
-            <button class="pixel-btn pixel-btn-green pixel-btn-sm" onclick="app.openTransactionModal()">
-              <span>+</span> Добавить операцию
-            </button>
-          </div>
-
-          <!-- Filters Bar -->
-          <div class="filter-bar">
-            <select id="filter-tx-account" class="pixel-select">
-              <option value="all">Все счета</option>
-            </select>
-            <select id="filter-tx-category" class="pixel-select">
-              <option value="all">Все категории</option>
-            </select>
-            <select id="filter-tx-status" class="pixel-select">
-              <option value="all">Любой статус</option>
-              <option value="confirmed">Только подтверждённые</option>
-              <option value="planned">Только запланированные</option>
-            </select>
-            <input type="text" id="filter-tx-search" class="pixel-input" placeholder="Поиск по заметке...">
-          </div>
-
-          <!-- Transactions list -->
-          <div id="tx-full-list" class="tx-list"></div>
-        </div>
-      </section>
-
-      <!-- ================= 3. TAB: ACCOUNTS ================= -->
-      <section id="tab-accounts" class="tab-content hidden">
-        <div class="pixel-card">
-          <div class="d-flex justify-between align-center" style="flex-wrap: wrap; gap: 10px;">
+        <!-- 1A. СТЕК БАНКОВСКИХ КАРТ -->
+        <div class="lg:col-span-6 bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 relative shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
             <div>
-              <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">
-                Общий баланс активных счетов
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] text-[#7E7B73] uppercase tracking-wider font-bold">Банковские карты</span>
+                <button onclick="openAddCardModal()" class="text-[11px] font-bold text-[#465948] bg-[#EAEFEA] hover:bg-[#DCE7DC] px-2.5 py-0.5 rounded-full transition flex items-center gap-1">
+                  <span>+</span> Добавить карту
+                </button>
               </div>
-              <div id="accounts-total-balance" class="amount-mono" style="font-size: 26px; font-weight: 700; color: #fff; margin-top: 2px;">
-                0 ₸
-              </div>
-              <div style="font-size: 12px; color: var(--text-dim);">(Исключённые из общего баланса счета не влияют на эту сумму)</div>
-            </div>
-            <button class="pixel-btn pixel-btn-amber" onclick="app.openAccountModal()">
-              <span>+</span> Создать счёт
-            </button>
-          </div>
-        </div>
-
-        <div id="accounts-full-list"></div>
-      </section>
-
-      <!-- ================= 4. TAB: BUDGET & LIMITS ================= -->
-      <section id="tab-budget" class="tab-content hidden">
-        <!-- Monthly Total Limit Card -->
-        <div class="pixel-card">
-          <div class="card-title">
-            <span>Общий месячный лимит расходов</span>
-            <span class="tag amount-mono" id="budget-total-percent">0%</span>
-          </div>
-
-          <div class="pixel-progress-wrap">
-            <div class="pixel-progress">
-              <div id="budget-total-progress-bar" class="pixel-progress-bar" style="width: 0%;"></div>
-            </div>
-          </div>
-
-          <div class="d-flex justify-between align-center amount-mono" style="font-size: 13px; margin-top: 6px;">
-            <span>Потрачено: <strong id="budget-total-spent" class="text-red">0 ₸</strong></span>
-            <span>Установленный лимит: <strong id="budget-total-limit-display" class="text-amber">0 ₸</strong></span>
-          </div>
-
-          <div class="d-flex align-center gap-2 mt-4" style="flex-wrap: wrap;">
-            <input type="number" id="input-total-monthly-limit" class="pixel-input amount-mono" step="any" placeholder="Задать общий лимит на месяц в ₸" style="max-width: 260px;">
-            <button id="btn-save-total-limit" class="pixel-btn pixel-btn-amber pixel-btn-sm">Сохранить лимит</button>
-          </div>
-        </div>
-
-        <!-- Category Limits Breakdown -->
-        <div class="pixel-card">
-          <div class="card-title">
-            <span>Лимиты по категориям</span>
-            <span class="tag">Контроль трат</span>
-          </div>
-          <div id="budget-limits-list"></div>
-        </div>
-      </section>
-
-      <!-- ================= 5. TAB: BCC DEPOSITS ================= -->
-      <section id="tab-deposits" class="tab-content hidden">
-        <div class="pixel-card">
-          <div class="d-flex justify-between align-center" style="flex-wrap: wrap; gap: 10px;">
-            <div>
-              <div style="font-size: 15px; font-weight: 700; color: #fff;">
-                Депозиты Банка ЦентрКредит (BCC)
-              </div>
-              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
-                Официальные модели вкладов «Моя цель» (16.7% / 18.06% ГЭСВ) и «Чемпион» (14.2% / 15.17% ГЭСВ)
+              <div class="text-xs text-[#171717] font-semibold mt-0.5">
+                <span class="sm:inline hidden">Кликните по карте для смены активной</span>
+                <span class="sm:hidden inline">Листайте стрелками или свайпом</span>
               </div>
             </div>
-            <button class="pixel-btn pixel-btn-amber" onclick="app.openDepositModal()">
-              <span>+</span> Открыть вклад BCC
-            </button>
-          </div>
-        </div>
 
-        <div id="deposits-cards-container"></div>
-      </section>
-
-      <!-- ================= 6. TAB: SAVINGS GOALS ================= -->
-      <section id="tab-goals" class="tab-content hidden">
-        <div class="pixel-card">
-          <div class="d-flex justify-between align-center" style="flex-wrap: wrap; gap: 10px;">
-            <div>
-              <div style="font-size: 15px; font-weight: 700; color: #fff;">
-                Финансовые цели
-              </div>
-              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
-                Отслеживайте накопления с привязкой к одному или нескольким счетам и депозитам
-              </div>
-            </div>
-            <button class="pixel-btn pixel-btn-amber" onclick="app.openGoalModal()">
-              <span>+</span> Новая цель
-            </button>
-          </div>
-        </div>
-
-        <div id="goals-cards-container" class="goals-grid"></div>
-      </section>
-
-      <!-- ================= 7. TAB: PLANNING (КАЛЕНДАРЬ, РЕГУЛЯРНЫЕ, ЖУРНАЛ) ================= -->
-      <section id="tab-planning" class="tab-content hidden">
-        <div class="sub-tabs-bar">
-          <button class="sub-tab-btn active" data-subtab="calendar">📅 Календарь платежей</button>
-          <button class="sub-tab-btn" data-subtab="recurring">🔄 Регулярные операции</button>
-          <button class="sub-tab-btn" data-subtab="activity">📜 Журнал действий</button>
-        </div>
-
-        <!-- Subtab 1: Calendar View -->
-        <div id="subtab-view-calendar" class="planning-subview">
-          <div class="compact-summary-strip">
-            <div class="compact-stat-card expense">
-              <span class="compact-stat-label">Нужно в ближайшие 7 дней</span>
-              <span id="calc-need-7d" class="compact-stat-value">0 ₸</span>
-              <span class="compact-stat-sub">Обязательные платежи</span>
-            </div>
-            <div class="compact-stat-card balance">
-              <span class="compact-stat-label">Нужно в ближайшие 30 дней</span>
-              <span id="calc-need-30d" class="compact-stat-value">0 ₸</span>
-              <span class="compact-stat-sub">Сумма всех расходов месяца</span>
-            </div>
-          </div>
-
-          <div class="pixel-card">
-            <div class="card-title">
-              <span>График предстоящих платежей</span>
-              <span class="tag">Календарь</span>
-            </div>
-            <div id="calendar-timeline-container" class="timeline-calendar"></div>
-          </div>
-        </div>
-
-        <!-- Subtab 2: Recurring Operations View -->
-        <div id="subtab-view-recurring" class="planning-subview hidden">
-          <div class="pixel-card">
-            <div class="d-flex justify-between align-center" style="flex-wrap: wrap; gap: 10px;">
-              <div>
-                <div style="font-size: 15px; font-weight: 700; color: #fff;">
-                  Регулярные операции
-                </div>
-                <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
-                  Зарплата, аренда, стипендия, подписки (Яндекс, Spotify) и коммунальные платежи
-                </div>
-              </div>
-              <button class="pixel-btn pixel-btn-amber" onclick="app.openRecurringModal()">
-                <span>+</span> Добавить платёж
+            <div class="flex items-center gap-2">
+              <button onclick="cycleCardPrev()" title="Предыдущая карта" class="w-8 h-8 rounded-full bg-[#EAE6DC] hover:bg-[#DDD8CD] flex items-center justify-center text-xs font-bold transition">
+                ←
+              </button>
+              <button onclick="cycleCardNext()" title="Следующая карта" class="w-8 h-8 rounded-full bg-[#EAE6DC] hover:bg-[#DDD8CD] flex items-center justify-center text-xs font-bold transition">
+                →
               </button>
             </div>
           </div>
 
-          <div class="pixel-card">
-            <div id="recurring-list-container" class="tx-list"></div>
-          </div>
-        </div>
-
-        <!-- Subtab 3: Activity Log View -->
-        <div id="subtab-view-activity" class="planning-subview hidden">
-          <div class="pixel-card">
-            <div class="card-title">
-              <span>Журнал действий и изменений</span>
-              <span class="tag">Аудит</span>
-            </div>
-            <div id="activity-log-container" class="tx-list" style="max-height: 65vh; overflow-y: auto;"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= 8. TAB: ANALYTICS ================= -->
-      <section id="tab-analytics" class="tab-content hidden">
-        <!-- Month-over-Month Difference Box -->
-        <div class="pixel-card mb-4">
-          <div class="card-title">
-            <span>Сравнение текущего месяца с прошлым</span>
-            <span class="tag">Динамика</span>
-          </div>
-          <div id="analytics-month-diff-box"></div>
-        </div>
-
-        <!-- Charts Grid -->
-        <div class="charts-grid mb-4">
-          <!-- Category Doughnut Chart -->
-          <div class="pixel-card">
-            <div class="card-title">
-              <span>Расходы по категориям</span>
-              <span class="tag">Структура</span>
-            </div>
-            <div class="chart-wrapper">
-              <canvas id="chart-categories-pie"></canvas>
-            </div>
-            <div id="chart-categories-legend" class="chart-legend"></div>
+          <!-- 3D CARDS DECK (Dynamic & 100% Opaque) -->
+          <div class="card-deck-container flex justify-center items-start my-2" id="deck-wrapper">
+            <!-- Rendered dynamically -->
           </div>
 
-          <!-- Monthly Bar Chart -->
-          <div class="pixel-card">
-            <div class="card-title">
-              <span id="chart-projection-title">Доходы и расходы за 6 месяцев</span>
-              <span class="tag">План</span>
+          <!-- Bottom Card Status Strip -->
+          <div class="pt-3 border-t border-[#ECE8DC] flex items-center justify-between text-xs">
+            <div class="flex items-center gap-1.5" id="deck-dots">
+              <!-- Dots -->
             </div>
-            <div class="chart-wrapper">
-              <canvas id="chart-monthly-bars"></canvas>
+
+            <div class="text-[#7E7B73]">
+              Активно: <b id="active-card-name" class="text-[#171717]">—</b>
             </div>
-            <div class="chart-legend" style="justify-content: center;">
-              <div class="legend-item"><span class="legend-color-box" style="background:#10b981;"></span> Доходы</div>
-              <div class="legend-item"><span class="legend-color-box" style="background:#ef4444;"></span> Расходы</div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="deleteActiveCard()" title="Удалить активную карту" class="text-neutral-400 hover:text-red-600 transition text-xs">
+                Удалить
+              </button>
+              <button onclick="openModal('tx', 'transfer')" class="text-xs font-bold text-[#465948] hover:underline">
+                Перевести →
+              </button>
             </div>
           </div>
         </div>
 
-        <div class="pixel-card">
-          <div class="card-title">
-            <span id="analytics-peaks-title">Пики месяца</span>
-            <span class="tag">По факту</span>
+        <!-- 1B. АККУРАТНЫЕ КАРТОЧКИ: ДЕПОЗИТЫ BCC И НАЛИЧНЫЕ -->
+        <div class="lg:col-span-6 flex flex-col justify-between gap-4">
+
+          <!-- Депозит BCC «Моя цель» с функцией зачисления процентов -->
+          <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs relative overflow-hidden">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 bg-[#194C38] text-white text-[10px] font-bold rounded-md">BCC</span>
+                  <h3 class="font-bold text-base text-[#171717]">Депозит «Моя цель»</h3>
+                </div>
+                <p class="text-xs text-[#7E7B73] mt-0.5">Банк ЦентрКредит • 3 месяца без частичного снятия</p>
+              </div>
+              <span class="text-xs font-black text-[#194C38] bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                18.06% ГЭСВ
+              </span>
+            </div>
+
+            <div class="my-3 py-3 border-y border-[#ECE7DC] flex justify-between items-end">
+              <div>
+                <div class="text-[11px] text-[#7E7B73] font-medium">Баланс вклада</div>
+                <div class="text-3xl font-extrabold text-[#171717] tracking-tight" id="deposit-val-goal">₸300 000</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[11px] text-[#7E7B73] font-medium">Доходность за месяц</div>
+                <div class="text-sm font-bold text-emerald-700" id="deposit-interest-calc">+ ₸4 175 / мес</div>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center text-xs text-[#7E7B73]">
+              <span>Срок: 3 мес. (договор активен)</span>
+              <button onclick="triggerAccrueInterest('acc_bcc_goal')" class="px-3.5 py-1.5 bg-[#465948] hover:bg-[#38483a] text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs active:scale-95">
+                <span>💰</span> Зачислить %
+              </button>
+            </div>
           </div>
-          <div id="analytics-peaks" class="analytics-peaks"></div>
+
+          <!-- Депозит BCC «Чемпион» & Наличные -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-start mb-1">
+                  <span class="text-xs font-bold text-[#171717]">🏆 BCC «Чемпион»</span>
+                  <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">15.17%</span>
+                </div>
+                <p class="text-[10px] text-[#7E7B73]">Свободное снятие от 1 000 ₸</p>
+                <div class="text-2xl font-black text-[#171717] mt-2" id="deposit-val-champ">₸500 000</div>
+              </div>
+              <div class="mt-3 pt-2 border-t border-[#ECE7DC] flex justify-between items-center text-xs">
+                <span class="text-[10px] text-[#7E7B73]">6 месяцев</span>
+                <button onclick="triggerAccrueInterest('acc_bcc_champ')" class="text-[11px] font-bold text-[#465948] hover:underline">
+                  + Начислить %
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-start mb-1">
+                  <span class="text-xs font-bold text-[#171717]">💵 Наличные</span>
+                  <span class="text-[10px] bg-[#EAE6DC] px-2 py-0.5 rounded-full font-semibold">₸ KZT</span>
+                </div>
+                <p class="text-[10px] text-[#7E7B73]">Кошелёк и сейф</p>
+                <div class="text-2xl font-black text-[#171717] mt-2" id="val-cash">₸45 000</div>
+              </div>
+              <div class="mt-3 pt-2 border-t border-[#ECE7DC] flex justify-between items-center text-xs">
+                <span class="text-[10px] text-[#7E7B73]">Сверено</span>
+                <button onclick="openModal('tx', 'expense', 'acc_cash')" class="text-[11px] font-bold text-[#465948] hover:underline">
+                  - Расход
+                </button>
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
-      </section>
+      </div>
 
-      <!-- ================= 9. TAB: SETTINGS & BACKUP ================= -->
-      <section id="tab-settings" class="tab-content hidden">
-        <!-- Backup & Restore -->
-        <div class="pixel-card">
-          <div class="card-title">
-            <span>Резервное копирование и экспорт (JSON)</span>
-            <span class="tag">Безопасность</span>
+
+      <!-- BLOCK 2: БОЛЬШАЯ ЦИФРА: ПОТРАЧЕНО ЗА МЕСЯЦ + ОСТАТОК БЮДЖЕТА -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch pt-2">
+
+        <div class="lg:col-span-7 bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-7 flex flex-col justify-between shadow-xs">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-[#7E7B73] uppercase tracking-wider font-semibold text-[11px]">Потрачено в этом месяце (Ноябрь)</span>
+            <span class="text-[#465948] bg-[#EAF0EB] px-2.5 py-0.5 rounded-full font-bold text-[11px]">Норма трат</span>
           </div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
-            Все финансовые записи хранятся локально в браузере. Вы можете в любой момент выгрузить полный файл данных или восстановить его на другом устройстве.
-          </p>
-          <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            <button id="btn-export-json" class="pixel-btn pixel-btn-amber">
-              💾 Экспорт данных (JSON)
+
+          <div class="my-6">
+            <div class="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-[#171717]">
+              ₸<span id="hero-month-spent">0</span>
+            </div>
+            <p class="text-xs text-[#85827A] mt-2 flex items-center gap-1.5" id="hero-comparison-text">
+              <span>📉 На 8.4% меньше</span> чем в прошлом месяце на этот день
+            </p>
+          </div>
+
+          <div class="pt-4 border-t border-[#ECE8DC] flex items-center justify-between text-xs">
+            <div class="text-[#69665E]">
+              Дневной темп: <b class="text-[#171717] font-semibold" id="hero-daily-rate">₸11 800 / день</b>
+            </div>
+            <button onclick="switchScreen('plan')" class="text-[#465948] font-bold hover:underline">
+              Аналитика расходов →
             </button>
-            <button id="btn-import-json" class="pixel-btn">
-              📂 Импорт из JSON
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 bg-gradient-to-br from-[#2D2E30] to-[#1C1D1E] text-white p-7 rounded-3xl flex flex-col justify-between shadow-sm">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-neutral-300">
+              <span class="w-2.5 h-2.5 rounded-full border border-neutral-400"></span>
+              <span>Остаток общего бюджета</span>
+            </div>
+            <span class="text-[10px] text-neutral-400 bg-white/10 px-2 py-0.5 rounded-full">до конца месяца</span>
+          </div>
+
+          <div class="my-4">
+            <div class="text-4xl font-extrabold tracking-tight text-white mb-2">
+              ₸<span id="hero-remaining-budget">0</span>
+            </div>
+            <div class="w-full h-2 bg-neutral-700 rounded-full mb-2 overflow-hidden">
+              <div id="hero-budget-bar" class="w-[0%] h-full bg-neutral-200 rounded-full transition-all duration-500"></div>
+            </div>
+            <div class="flex justify-between text-xs text-neutral-400">
+              <span id="hero-budget-percent">0%</span>
+              <span id="hero-budget-limit">Лимит: ₸250 000</span>
+            </div>
+          </div>
+
+          <div class="text-xs text-neutral-400 flex justify-between items-center pt-3 border-t border-neutral-700/60">
+            <span id="hero-budget-daily-allowance">Доступно: ~₸0 / день</span>
+            <button onclick="openSetLimitsModal()" class="text-neutral-200 hover:text-white underline">Настроить лимит</button>
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- BLOCK 3: БЛИЖАЙШИЕ ПЛАТЕЖИ (КАЛЕНДАРЬ НА 7 ДНЕЙ) + ПОСЛЕДНИЕ ТРАТЫ -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+
+        <!-- Предстоящие обязательные списания (Календарь на 7 дней) -->
+        <div class="lg:col-span-5 bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-[#ECE8DC] mb-3">
+              <div>
+                <h3 class="font-bold text-sm text-[#171717]">Ближайшие платежи (7 дней)</h3>
+                <p class="text-[11px] text-[#7E7B73]">Автоматический расчёт обязательств</p>
+              </div>
+              <span class="text-xs font-bold text-[#465948]" id="upcoming-7d-sum">₸0</span>
+            </div>
+
+            <div class="space-y-2.5" id="upcoming-7d-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-[#ECE8DC] mt-4 flex justify-between items-center text-xs">
+            <span class="text-[#7E7B73]">На 30 дней: <b class="text-[#171717]" id="upcoming-30d-sum">₸0</b></span>
+            <button onclick="switchScreen('operations', 'tab-recurring')" class="text-[#465948] font-bold hover:underline">
+              Все подписки →
             </button>
-            <input type="file" id="input-import-json" accept=".json" class="hidden">
           </div>
         </div>
 
-        <!-- Categories Customization -->
-        <div class="pixel-card">
-          <div class="card-title">
-            <span>Управление категориями</span>
-            <span class="tag">Категории</span>
+        <!-- Последние операции ленты с точками-маркерами -->
+        <div class="lg:col-span-7 bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs">
+          <div class="flex items-center justify-between pb-3 border-b border-[#ECE8DC] mb-3">
+            <div>
+              <h3 class="font-bold text-sm text-[#171717]">Последние операции</h3>
+              <p class="text-[11px] text-[#7E7B73]">Хроника с точками-маркерами</p>
+            </div>
+            <button onclick="switchScreen('operations')" class="text-xs font-semibold text-[#465948] hover:underline">
+              Все операции →
+            </button>
           </div>
 
-          <form id="form-add-category" class="d-flex gap-2 mb-4" style="flex-wrap: wrap; align-items: flex-end;">
-            <div style="flex: 2; min-width: 140px;">
-              <label class="form-label">Название категории</label>
-              <input type="text" id="cat-input-name" class="pixel-input" placeholder="Например: Кафе" required>
+          <div class="divide-y divide-[#EDE9DF]" id="recent-home-tx-list">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 2: ЖУРНАЛ ОПЕРАЦИЙ & КАЛЕНДАРЬ ПЛАТЕЖЕЙ              -->
+    <!-- ============================================================ -->
+    <section id="workspace-operations" class="workspace-pane hidden p-5 sm:p-8 lg:p-10 max-w-6xl mx-auto w-full space-y-7 animate-fadeIn">
+
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E4DA] pb-5">
+        <div>
+          <h1 class="font-editorial text-4xl sm:text-5xl text-[#171717]">
+            Журнал & <span class="text-[#465948] italic">платежи</span>
+          </h1>
+          <p class="text-xs text-[#7E7B73] mt-1">Все доходы, расходы, переводы и регулярные подписки</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex bg-[#EAE6DB] p-1 rounded-2xl text-xs font-semibold">
+            <button onclick="setOpsMode('feed')" id="subnav-ops-feed" class="px-4 py-1.5 rounded-xl bg-white text-[#171717] shadow-xs transition">
+              Лента операций
+            </button>
+            <button onclick="setOpsMode('recurring')" id="subnav-ops-recurring" class="px-4 py-1.5 rounded-xl text-[#6B6860] hover:text-[#171717] transition">
+              Регулярные & Подписки
+            </button>
+          </div>
+
+          <button onclick="openModal('tx', 'expense')" class="px-4 py-2 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-sm transition">
+            + Операция
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 2A: FEED OF TRANSACTIONS -->
+      <div id="ops-view-feed" class="space-y-5">
+        <div class="bg-[#FAF9F5] border border-[#DFDAD0] p-4 rounded-3xl space-y-3 shadow-xs">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex bg-[#EAE6DB] p-1 rounded-2xl text-xs font-semibold">
+              <button onclick="filterTxType('all', this)" class="tx-filter-btn px-4 py-1.5 rounded-xl bg-white text-[#171717] shadow-xs">Все</button>
+              <button onclick="filterTxType('expense', this)" class="tx-filter-btn px-4 py-1.5 rounded-xl text-[#6B6860] hover:text-[#171717]">Расходы</button>
+              <button onclick="filterTxType('income', this)" class="tx-filter-btn px-4 py-1.5 rounded-xl text-[#6B6860] hover:text-[#171717]">Доходы</button>
+              <button onclick="filterTxType('transfer', this)" class="tx-filter-btn px-4 py-1.5 rounded-xl text-[#6B6860] hover:text-[#171717]">Переводы</button>
             </div>
-            <div style="flex: 1; min-width: 70px;">
-              <label class="form-label">Иконка</label>
-              <input type="text" id="cat-input-icon" class="pixel-input" value="☕" style="text-align: center;">
-            </div>
-            <div style="flex: 1; min-width: 110px;">
-              <label class="form-label">Тип</label>
-              <select id="cat-input-type" class="pixel-select">
-                <option value="expense">Расход</option>
-                <option value="income">Доход</option>
+
+            <div class="flex items-center gap-2 text-xs">
+              <select id="filter-account" onchange="renderOperationsFeed()" class="bg-white border border-[#DFDAD0] rounded-xl px-3 py-1.5 text-[#171717] focus:outline-none">
+                <option value="all">Все счета</option>
               </select>
-            </div>
-            <div style="width: 44px;">
-              <label class="form-label">Цвет</label>
-              <input type="color" id="cat-input-color" value="#f59e0b" style="height: 36px; width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: transparent; cursor: pointer;">
-            </div>
-            <button type="submit" class="pixel-btn pixel-btn-amber pixel-btn-sm" style="height: 36px;">+ Добавить</button>
-          </form>
 
-          <div id="settings-categories-list" class="tx-list"></div>
-        </div>
-
-        <!-- Firebase Cloud Sync Config -->
-        <div class="pixel-card">
-          <div class="card-title">
-            <span>Облачная синхронизация Firebase</span>
-            <span class="tag">Google Cloud</span>
-          </div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
-            Вставьте JSON-конфиг вашего бесплатного проекта Firebase для синхронизации между ноутбуком и телефоном через Google Auth:
-          </p>
-          <textarea id="firebase-config-json" class="pixel-textarea amount-mono" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "..." }'></textarea>
-          <div class="mt-2 text-right">
-            <button id="btn-save-firebase-cfg" class="pixel-btn pixel-btn-sm">Сохранить конфигурацию</button>
-          </div>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- Mobile Bottom Navigation (Strictly 5 items: Главная, Операции, Счета, Бюджет, Ещё) -->
-    <nav class="mobile-nav">
-      <button class="mobile-nav-btn active" data-tab="dashboard">
-        <span class="icon">📊</span>
-        <span>Главная</span>
-      </button>
-      <button class="mobile-nav-btn" data-tab="transactions">
-        <span class="icon">🧾</span>
-        <span>Операции</span>
-      </button>
-      <button class="mobile-nav-btn" data-tab="accounts">
-        <span class="icon">💳</span>
-        <span>Счета</span>
-      </button>
-      <button class="mobile-nav-btn" data-tab="budget">
-        <span class="icon">⚖️</span>
-        <span>Бюджет</span>
-      </button>
-      <button class="mobile-nav-btn" data-tab="more">
-        <span class="icon">☰</span>
-        <span>Ещё</span>
-      </button>
-    </nav>
-
-    <!-- Mobile Bottom Sheet ("Ещё") -->
-    <div id="more-sheet" class="more-sheet">
-      <div class="more-sheet-content">
-        <div class="d-flex justify-between align-center" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-          <span style="font-weight: 700; font-size: 15px;">Разделы приложения</span>
-          <button class="pixel-btn pixel-btn-sm" onclick="document.getElementById('more-sheet').classList.remove('active')">✕</button>
-        </div>
-        <div class="more-nav-grid">
-          <div class="more-nav-item" data-tab="deposits">
-            <span>🏦</span> <span>Депозиты BCC</span>
-          </div>
-          <div class="more-nav-item" data-tab="goals">
-            <span>🎯</span> <span>Цели накоплений</span>
-          </div>
-          <div class="more-nav-item" data-tab="planning" data-subtab="calendar">
-            <span>📅</span> <span>Календарь</span>
-          </div>
-          <div class="more-nav-item" data-tab="planning" data-subtab="recurring">
-            <span>🔄</span> <span>Регулярные</span>
-          </div>
-          <div class="more-nav-item" data-tab="analytics">
-            <span>📈</span> <span>Аналитика</span>
-          </div>
-          <div class="more-nav-item" data-tab="planning" data-subtab="activity">
-            <span>📜</span> <span>Журнал действий</span>
-          </div>
-          <div class="more-nav-item" data-tab="settings">
-            <span>⚙️</span> <span>Настройки и экспорт</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Toast Notifications -->
-    <div id="toast-container"></div>
-
-    <!-- ================= MODALS ================= -->
-
-    <!-- 1. Transaction Modal -->
-    <div id="modal-transaction" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span id="modal-tx-title" class="modal-title">Новая операция</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <form id="form-transaction">
-          <div id="tx-type-group" class="type-toggle-group">
-            <div class="type-toggle-btn active expense" data-type="expense">Расход</div>
-            <div class="type-toggle-btn" data-type="income">Доход</div>
-            <div class="type-toggle-btn" data-type="transfer">Перевод</div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Сумма в тенге (₸)</label>
-            <input type="number" id="tx-input-amount" class="pixel-input amount-mono" placeholder="0" step="any" required>
-          </div>
-
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label id="tx-account-label" class="form-label">Счёт списания</label>
-              <select id="tx-input-account" class="pixel-select"></select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Дата операции</label>
-              <input type="date" id="tx-input-date" class="pixel-input" required>
-            </div>
-          </div>
-
-          <div id="tx-row-to-account" class="form-group hidden">
-            <label class="form-label">Счёт зачисления (получатель)</label>
-            <select id="tx-input-to-account" class="pixel-select"></select>
-          </div>
-
-          <div id="tx-row-category" class="form-group">
-            <label class="form-label">Категория</label>
-            <select id="tx-input-category" class="pixel-select"></select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Статус операции</label>
-            <select id="tx-input-status" class="pixel-select">
-              <option value="confirmed">Подтверждена (списано/зачислено)</option>
-              <option value="planned">Запланирована (будущий платёж)</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Заметка / комментарий</label>
-            <input type="text" id="tx-input-note" class="pixel-input" placeholder="Например: Супермаркет, Зарплата...">
-          </div>
-
-          <div class="mt-4 d-flex justify-between">
-            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-            <button type="submit" class="pixel-btn pixel-btn-green">Сохранить</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 2. Account Modal -->
-    <div id="modal-account" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span id="modal-acc-title" class="modal-title">Новый счёт</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <form id="form-account">
-          <div class="form-group">
-            <label class="form-label">Название счёта</label>
-            <input type="text" id="acc-input-name" class="pixel-input" placeholder="Например: Kaspi Gold, Halyk, Наличные..." required>
-          </div>
-
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label class="form-label">Тип счёта</label>
-              <select id="acc-input-type" class="pixel-select">
-                <option value="card">Банковская карта</option>
-                <option value="cash">Наличные</option>
-                <option value="savings">Накопительный счёт</option>
-                <option value="deposit">BCC депозит</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Иконка</label>
-              <input type="text" id="acc-input-icon" class="pixel-input" value="💳" style="text-align: center;">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Начальный баланс (₸)</label>
-            <input type="number" id="acc-input-balance" class="pixel-input amount-mono" value="0" step="any">
-          </div>
-
-          <div class="d-flex align-center gap-2 mt-2" style="font-size: 13px;">
-            <input type="checkbox" id="acc-input-exclude" style="width: 16px; height: 16px; accent-color: var(--accent-amber);">
-            <label for="acc-input-exclude">Исключить этот счёт из общего баланса</label>
-          </div>
-
-          <div class="mt-4 d-flex justify-between">
-            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-            <button type="submit" class="pixel-btn pixel-btn-amber">Сохранить счёт</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 3. BCC Deposit Modal -->
-    <div id="modal-deposit" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span id="modal-deposit-title" class="modal-title">Параметры депозита BCC</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <form id="form-deposit-config">
-          <div class="form-group">
-            <label class="form-label">Тип вклада BCC</label>
-            <select id="dep-input-type" class="pixel-select">
-              <option value="my_goal">«Моя цель» (3 мес. / 16.7% ном. / 18.06% ГЭСВ / без снятий)</option>
-              <option value="champion">«Чемпион» (6 мес. / 14.2% ном. / 15.17% ГЭСВ / со снятиями)</option>
-            </select>
-          </div>
-
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label class="form-label">Название вклада</label>
-              <input type="text" id="dep-input-name" class="pixel-input" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Эмодзи</label>
-              <input type="text" id="dep-input-icon" class="pixel-input" value="🏦" maxlength="8" style="text-align: center;" aria-label="Эмодзи депозита">
-            </div>
-          </div>
-
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label class="form-label">Начальная сумма (₸)</label>
-              <input type="number" id="dep-input-amount" class="pixel-input amount-mono" step="any" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Срок (в месяцах)</label>
-              <input type="number" id="dep-input-term" class="pixel-input" min="1" max="60" required>
-            </div>
-          </div>
-
-          <div id="dep-source-row" class="form-group">
-            <label class="form-label">Списать начальную сумму со счёта</label>
-            <select id="dep-input-source-account" class="pixel-select" required>
-              <option value="">Выберите счёт списания</option>
-            </select>
-            <div class="form-hint">Будет создан перевод на депозит — сумма спишется с выбранного счёта и появится в истории операций.</div>
-          </div>
-
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label class="form-label">Номинальная ставка (%)</label>
-              <input type="number" id="dep-input-nom-rate" class="pixel-input amount-mono" step="any" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">ГЭСВ (%)</label>
-              <input type="number" id="dep-input-eff-rate" class="pixel-input amount-mono" step="any" required>
-            </div>
-          </div>
-
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label class="form-label">Дата открытия</label>
-              <input type="date" id="dep-input-start-date" class="pixel-input" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Плановое пополнение (₸/мес)</label>
-              <input type="number" id="dep-input-topup" class="pixel-input amount-mono" step="any" placeholder="0">
-            </div>
-          </div>
-
-          <div class="disclaimer-box">
-            Ставки можно вручную изменить, если BCC скорректирует условия. Проценты рассчитываются как прогноз.
-          </div>
-
-          <div class="mt-4 d-flex justify-between">
-            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-            <button type="button" id="btn-save-bcc-deposit" class="pixel-btn pixel-btn-amber">Сохранить вклад</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 4. Close BCC Deposit Modal -->
-    <div id="modal-close-deposit" class="modal-overlay">
-      <div class="modal-box" style="max-width: 460px;">
-        <div class="modal-header">
-          <span class="modal-title">Закрыть вклад BCC</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <input type="hidden" id="close-deposit-id">
-        <div class="disclaimer-box" style="margin-bottom: 16px;">
-          Это действие только для учёта в планировщике: деньги в приложении будут переведены на выбранный счёт. В BCC банковский перевод нужно выполнить отдельно.
-        </div>
-        <div class="form-group">
-          <label class="form-label">Закрываемый вклад</label>
-          <div id="close-deposit-name" class="pixel-input" style="display:flex; align-items:center; min-height: 42px;"></div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Сумма к переводу</label>
-          <div id="close-deposit-amount" class="pixel-input amount-mono" style="display:flex; align-items:center; min-height: 42px;"></div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Перевести на счёт</label>
-          <select id="close-deposit-target" class="pixel-select"></select>
-        </div>
-        <div class="mt-4 d-flex justify-between">
-          <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-          <button type="button" id="btn-confirm-close-deposit" class="pixel-btn pixel-btn-red">Закрыть и перевести</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5. Accrue Interest Modal (Зачислить проценты) -->
-    <div id="modal-deposit-interest" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span class="modal-title">Зачисление процентов BCC</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
-          Поскольку приложение не подключается напрямую к банковскому API, вознаграждение зачисляется вручную по рассчитанному прогнозу банка:
-        </p>
-        <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 14px; font-size: 13px;">
-          <div>Депозит: <strong id="interest-modal-dep-name" style="color: #fff;">—</strong></div>
-          <div>Текущий остаток: <strong id="interest-modal-balance" class="amount-mono">—</strong></div>
-          <div>Ставка: <strong id="interest-modal-rate">—</strong></div>
-        </div>
-
-        <input type="hidden" id="interest-modal-dep-id">
-
-        <div class="form-group">
-          <label class="form-label">Сумма вознаграждения к зачислению (₸)</label>
-          <input type="number" id="interest-input-amount" class="pixel-input amount-mono" step="any" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Дата начисления</label>
-          <input type="date" id="interest-input-date" class="pixel-input" required>
-        </div>
-
-        <div class="mt-4 d-flex justify-between">
-          <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-          <button type="button" id="btn-confirm-accrue-interest" class="pixel-btn pixel-btn-green">✓ Зачислить на депозит</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5. Goals Modal (Supports MULTI-ACCOUNT) -->
-    <div id="modal-goal" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span id="modal-goal-title" class="modal-title">Цель накоплений</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <form id="form-goal">
-          <div class="form-group">
-            <label class="form-label">Название цели</label>
-            <input type="text" id="goal-input-name" class="pixel-input" placeholder="Например: Ноутбук — 500 000 ₸" required>
-          </div>
-
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label class="form-label">Целевая сумма (₸)</label>
-              <input type="number" id="goal-input-target" class="pixel-input amount-mono" step="any" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Срок достижения (дедлайн)</label>
-              <input type="date" id="goal-input-date" class="pixel-input">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Привязать счета или депозиты (можно несколько)</label>
-            <div id="goal-accounts-checklist" class="goal-accounts-checklist"></div>
-            <span style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Сумма на всех выбранных счетах будет автоматически учитываться в прогрессе цели</span>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Или задать накопленную сумму вручную (₸)</label>
-            <input type="number" id="goal-input-current" class="pixel-input amount-mono" step="any" value="0">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Описание / комментарий</label>
-            <input type="text" id="goal-input-desc" class="pixel-input" placeholder="Зачем вы копите на эту цель...">
-          </div>
-
-          <div class="mt-4 d-flex justify-between">
-            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-            <button type="submit" class="pixel-btn pixel-btn-amber">Сохранить цель</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 6. Recurring Payment Modal -->
-    <div id="modal-recurring" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span id="modal-recurring-title" class="modal-title">Регулярный платёж</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <form id="form-recurring">
-          <div class="form-group">
-            <label class="form-label">Название платежа</label>
-            <input type="text" id="rec-input-name" class="pixel-input" placeholder="Например: Аренда, Зарплата, Яндекс Плюс..." required>
-          </div>
-
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label class="form-label">Сумма в тенге (₸)</label>
-              <input type="number" id="rec-input-amount" class="pixel-input amount-mono" step="any" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Тип</label>
-              <select id="rec-input-type" class="pixel-select">
-                <option value="expense">Расход</option>
-                <option value="income">Доход</option>
+              <select id="filter-category" onchange="renderOperationsFeed()" class="bg-white border border-[#DFDAD0] rounded-xl px-3 py-1.5 text-[#171717] focus:outline-none">
+                <option value="all">Все категории</option>
               </select>
             </div>
           </div>
 
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label class="form-label">Счёт списания / зачисления</label>
-              <select id="rec-input-account" class="pixel-select"></select>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#8A8780]">🔍</span>
+            <input type="text" id="filter-search" oninput="renderOperationsFeed()" placeholder="Поиск по заметке, магазину (Magnum, Wolt, Кофе, АЗС...)" class="w-full bg-white border border-[#DFDAD0] rounded-xl pl-9 pr-4 py-2 text-xs text-[#171717] placeholder-[#8A8780] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+          </div>
+        </div>
+
+        <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-5 shadow-xs" id="full-tx-feed">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- VIEW 2B: RECURRING PAYMENTS & CALENDAR -->
+      <div id="ops-view-recurring" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="bg-[#FAF9F5] border border-[#DFDAD0] p-5 rounded-3xl">
+            <div class="text-[11px] text-[#7E7B73] uppercase font-bold">Обязательства за 30 дней</div>
+            <div class="text-3xl font-black text-[#171717] mt-1" id="rec-total-sum">₸0</div>
+            <div class="text-xs text-[#7E7B73] mt-1">Аренда, подписки, регулярные счета</div>
+          </div>
+
+          <div class="bg-[#FAF9F5] border border-[#DFDAD0] p-5 rounded-3xl">
+            <div class="text-[11px] text-[#7E7B73] uppercase font-bold">Регулярные поступления</div>
+            <div class="text-3xl font-black text-emerald-700 mt-1" id="rec-income-sum">₸0</div>
+            <div class="text-xs text-[#7E7B73] mt-1">Ожидаемая зарплата и доходы</div>
+          </div>
+
+          <div class="bg-[#FAF9F5] border border-[#DFDAD0] p-5 rounded-3xl flex flex-col justify-between">
+            <div>
+              <div class="text-[11px] text-[#7E7B73] uppercase font-bold">Действие</div>
+              <div class="text-xs text-[#7E7B73] mt-1">Добавьте новую регулярную подписку</div>
             </div>
-            <div class="form-group">
-              <label class="form-label">День месяца (1-31)</label>
-              <input type="number" id="rec-input-day" class="pixel-input amount-mono" min="1" max="31" value="10" required>
+            <button onclick="openModal('rec')" class="mt-2 py-2 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-xl transition">
+              + Добавить регулярный платёж
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs">
+          <h3 class="font-bold text-base text-[#171717] mb-4">Список регулярных платежей и подписок</h3>
+          <div class="divide-y divide-[#EDE9DF]" id="recurring-items-list">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 3: ПЛАН: БЮДЖЕТ, ЦЕЛИ & АНАЛИТИКА                    -->
+    <!-- ============================================================ -->
+    <section id="workspace-plan" class="workspace-pane hidden p-5 sm:p-8 lg:p-10 max-w-6xl mx-auto w-full space-y-8 animate-fadeIn">
+
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E8E4DA] pb-5">
+        <div>
+          <h1 class="font-editorial text-4xl sm:text-5xl text-[#171717]">
+            План, цели & <span class="text-[#465948] italic">аналитика</span>
+          </h1>
+          <p class="text-xs text-[#7E7B73] mt-1">Единый центр: накопления на мечту, лимиты трат и отчёты</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="openAddGoalModal()" class="px-4 py-2 bg-[#EAE6DC] hover:bg-[#DDD8CD] text-[#171717] text-xs font-semibold rounded-full transition">
+            + Новая цель
+          </button>
+          <button onclick="openSetLimitsModal()" class="px-4 py-2 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-sm transition">
+            Настроить лимиты
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION 3A: ФИНАНСОВЫЕ ЦЕЛИ НАКОПЛЕНИЙ -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-bold text-base text-[#171717]">Цели накоплений</h2>
+            <p class="text-xs text-[#7E7B73]">Прогресс рассчитывается автоматически по привязанным счетам</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="goals-cards-grid">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- SECTION 3B: МЕСЯЧНЫЕ ЛИМИТЫ ПО КАТЕГОРИЯМ -->
+      <div class="space-y-4 pt-2">
+        <h2 class="font-bold text-base text-[#171717]">Месячные лимиты по категориям</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="category-limits-grid">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- SECTION 3C: АНАЛИТИКА И СТРУКТУРА РАСХОДОВ -->
+      <div class="space-y-4 pt-2">
+        <h2 class="font-bold text-base text-[#171717]">Аналитика трат за ноябрь</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+          <div class="lg:col-span-6 bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+            <h3 class="font-bold text-sm text-[#171717] mb-3">Диаграмма долей трат</h3>
+            <div class="flex justify-center items-center my-2">
+              <canvas id="analyticsPieChart" width="300" height="260"></canvas>
+            </div>
+            <p class="text-[11px] text-[#7E7B73] text-center">Наведите курсор на сегмент для подробностей</p>
+          </div>
+
+          <div class="lg:col-span-6 space-y-4">
+            <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-xs font-bold text-[#171717]">Норма сбережений (Savings Rate)</span>
+                <span class="text-xs font-extrabold text-[#465948]" id="analytics-savings-rate">0%</span>
+              </div>
+              <div class="w-full bg-[#EAE6DC] h-2.5 rounded-full overflow-hidden">
+                <div id="analytics-savings-bar" class="bg-[#465948] h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <p class="text-[11px] text-[#7E7B73] mt-2">Доля отложенных средств от всех доходов</p>
+            </div>
+
+            <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs space-y-3">
+              <h4 class="font-bold text-xs text-[#171717] uppercase tracking-wider">Главные категории расходов</h4>
+              <div class="space-y-2.5" id="analytics-top-categories">
+                <!-- Populated dynamically -->
+              </div>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Категория</label>
-            <select id="rec-input-category" class="pixel-select"></select>
-          </div>
-
-          <div class="mt-4 d-flex justify-between">
-            <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-            <button type="submit" class="pixel-btn pixel-btn-amber">Сохранить</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 7. Confirm Action / Delete Modal -->
-    <div id="modal-confirm-action" class="modal-overlay">
-      <div class="modal-box" style="max-width: 420px;">
-        <div class="modal-header">
-          <span id="modal-confirm-title" class="modal-title">Подтверждение</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <p id="modal-confirm-desc" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          Вы уверены, что хотите выполнить это действие?
-        </p>
-        <div class="d-flex justify-between">
-          <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-          <button type="button" id="btn-confirm-proceed" class="pixel-btn pixel-btn-red pixel-btn-sm">Да, подтверждаю</button>
         </div>
       </div>
-    </div>
 
-    <!-- 8. Deposit Schedule Modal -->
-    <div id="modal-dep-schedule" class="modal-overlay">
-      <div class="modal-box" style="max-width: 560px;">
-        <div class="modal-header">
-          <span id="modal-dep-schedule-title" class="modal-title">Прогноз дохода</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <div id="modal-dep-schedule-body"></div>
-      </div>
-    </div>
-
-    <!-- 9. Account History Modal -->
-    <div id="modal-acc-history" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span id="modal-acc-history-title" class="modal-title">История операций</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <div id="modal-acc-history-list" class="tx-list" style="max-height: 60vh; overflow-y: auto;"></div>
-      </div>
-    </div>
-
-    <!-- 10. Firebase Config Modal -->
-    <div id="modal-firebase-settings" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span class="modal-title">Вход через Google / Firebase</span>
-          <button class="modal-close" data-modal-close>✕</button>
-        </div>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
-          Введите конфигурацию вашего Firebase проекта для синхронизации между устройствами:
-        </p>
-        <textarea id="modal-fb-config-text" class="pixel-textarea amount-mono" rows="6" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "..." }'></textarea>
-        <div class="mt-4 d-flex justify-between">
-          <button type="button" class="pixel-btn pixel-btn-sm" data-modal-close>Отмена</button>
-          <button type="button" id="btn-modal-save-firebase" class="pixel-btn pixel-btn-amber">Сохранить и войти</button>
-        </div>
-      </div>
-    </div>
+    </section>
 
   </div>
 
-  <!-- Application Modules -->
-  <script type="module" src="./js/bcc-deposits.js?v=25"></script>
-  <script type="module" src="./js/analytics.js?v=25"></script>
-  <script type="module" src="./js/firebase-config.js?v=25"></script>
-  <script type="module" src="./js/app.js?v=25"></script>
 
-  <!-- Wire Inline Deposit Save -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('btn-save-bcc-deposit')?.addEventListener('click', () => {
-        const app = window.app;
-        if (!app) return;
+  <!-- ============================================================== -->
+  <!-- MOBILE BOTTOM NAVIGATION                                       -->
+  <!-- ============================================================== -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF9F5]/95 backdrop-blur-md border-t border-[#E8E4DA] px-6 py-2 flex justify-between items-center text-[10px]">
 
-        const subType = document.getElementById('dep-input-type').value;
-        const name = document.getElementById('dep-input-name').value.trim();
-        const icon = document.getElementById('dep-input-icon').value.trim() || (subType === 'champion' ? '🏆' : '🏦');
-        const initialBalance = parseFloat(document.getElementById('dep-input-amount').value) || 0;
-        const termMonths = parseInt(document.getElementById('dep-input-term').value, 10) || 3;
-        const nominalRate = parseFloat(document.getElementById('dep-input-nom-rate').value) || 16.7;
-        const effectiveRate = parseFloat(document.getElementById('dep-input-eff-rate').value) || 18.06;
-        const startDate = document.getElementById('dep-input-start-date').value;
-        const monthlyTopUp = parseFloat(document.getElementById('dep-input-topup').value) || 0;
-        const sourceAccountId = document.getElementById('dep-input-source-account').value;
+    <button onclick="switchScreen('capital')" id="mob-nav-capital" class="mob-nav-btn active flex flex-col items-center gap-1 text-[#171717]">
+      <div class="icon-pill w-11 h-7 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-xs transition">💳</div>
+      <span>Капитал</span>
+    </button>
 
-        if (!name) {
-          app.showToast('Введите название депозита!', 'error');
-          return;
-        }
+    <button onclick="switchScreen('operations')" id="mob-nav-operations" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
+      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">🧾</div>
+      <span>Операции</span>
+    </button>
 
-        const isChampion = subType === 'champion';
+    <button onclick="openModal('tx', 'expense')" class="flex flex-col items-center -mt-5">
+      <div class="w-12 h-12 rounded-full bg-[#171717] text-white flex items-center justify-center text-xl font-bold shadow-xl active:scale-95 transition">
+        +
+      </div>
+      <span class="text-[9px] font-bold text-[#171717] mt-1">Расход</span>
+    </button>
 
-        if (app.editingAccountId) {
-          const idx = app.state.accounts.findIndex((a) => a.id === app.editingAccountId);
-          if (idx !== -1) {
-            app.state.accounts[idx] = {
-              ...app.state.accounts[idx],
-              name,
-              icon,
-              subType,
-              initialBalance,
-              termMonths,
-              nominalRate,
-              effectiveRate,
-              startDate,
-              monthlyTopUp,
-              allowsWithdrawal: isChampion,
-              minBalance: isChampion ? 1000 : 0
-            };
-            app.logActivity(`Обновлены параметры депозита BCC: ${name}`);
-            app.showToast('Параметры вклада BCC обновлены', 'success');
-          }
-        } else {
-          const sourceAccount = app.state.accounts.find((account) => account.id === sourceAccountId && account.type !== 'deposit');
-          if (!sourceAccount) {
-            app.showToast('Выберите счёт, с которого открыть вклад!', 'error');
-            return;
-          }
+    <button onclick="switchScreen('plan')" id="mob-nav-plan" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
+      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">🎯</div>
+      <span>План & Цели</span>
+    </button>
 
-          if (initialBalance <= 0) {
-            app.showToast('Укажите начальную сумму вклада больше нуля!', 'error');
-            return;
-          }
+    <button onclick="openSettingsModal()" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
+      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">⚙️</div>
+      <span>Ещё</span>
+    </button>
 
-          if (app.calculateAccountBalance(sourceAccountId) < initialBalance) {
-            app.showToast('На выбранном счёте недостаточно средств для открытия вклада!', 'error');
-            return;
-          }
+  </nav>
 
-          const newDep = {
-            id: 'acc_dep_' + Date.now(),
-            name,
-            type: 'deposit',
-            isBCC: true,
-            subType,
-            currency: '₸',
-            icon,
-            initialBalance: 0,
-            excludeFromTotal: false,
-            termMonths,
-            nominalRate,
-            effectiveRate,
-            startDate,
-            monthlyTopUp,
-            allowsWithdrawal: isChampion,
-            minBalance: isChampion ? 1000 : 0
-          };
-          app.state.accounts.push(newDep);
-          app.state.transactions.push({
-            id: 'tx_open_dep_' + Date.now(),
-            type: 'transfer',
-            amount: initialBalance,
-            date: startDate,
-            accountId: sourceAccountId,
-            toAccountId: newDep.id,
-            categoryId: null,
-            note: `Открытие депозита «${name}»`,
-            status: 'confirmed',
-            createdAt: new Date().toISOString()
-          });
-          app.logActivity(`Открыт вклад BCC «${name}» со счёта «${sourceAccount.name}»: ${initialBalance.toLocaleString('ru-RU')} ₸`);
-          app.showToast('Вклад открыт: сумма переведена со счёта', 'success');
-        }
 
-        app.saveState();
-        app.closeModal('modal-deposit');
-        app.render();
-      });
+  <!-- ============================================================== -->
+  <!-- MODALS CONTAINER                                               -->
+  <!-- ============================================================== -->
 
-      document.getElementById('btn-modal-save-firebase')?.addEventListener('click', async () => {
-        const app = window.app;
-        const raw = document.getElementById('modal-fb-config-text')?.value.trim();
-        if (!raw) {
-          app?.showToast('Введите JSON конфигурацию!', 'error');
-          return;
-        }
-        try {
-          const { saveFirebaseConfig, initFirebase, loginWithGoogle, parseFirebaseConfigInput } = await import('./js/firebase-config.js?v=25');
-          const cfg = parseFirebaseConfigInput(raw);
-          saveFirebaseConfig(cfg);
-          await initFirebase(cfg);
-          app?.closeModal('modal-firebase-settings');
-          app?.showToast('Конфигурация сохранена! Выполняется вход...', 'info');
-          await loginWithGoogle();
-          app?.showToast('Успешный вход через Google!', 'success');
-        } catch (err) {
-          app?.showToast(`Ошибка: ${err.message}`, 'error');
-        }
-      });
-    });
-  </script>
+  <!-- MODAL: ADD BANK CARD (С ЖИВЫМ ПРЕДПРОСМОТРОМ) -->
+  <div id="modal-add-card" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-scaleUp space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-[#ECE8DC]">
+        <h3 class="font-bold text-base text-[#171717]">💳 Добавление банковской карты</h3>
+        <button onclick="closeModal('modal-add-card')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black">✕</button>
+      </div>
+
+      <div class="flex justify-center py-1">
+        <div id="preview-card" class="bank-card relative !transform-none !shadow-lg">
+          <div class="flex justify-between items-start">
+            <div class="flex items-center gap-1.5" id="preview-bank-logo"></div>
+            <div id="preview-ps-logo"></div>
+          </div>
+
+          <div class="flex justify-between items-center my-3.5">
+            <div class="flex items-center gap-3">
+              <div class="emv-chip"></div>
+              <svg class="w-5 h-5 text-white/80 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8.5 16.5a5 5 0 0 1 0-9"></path>
+                <path d="M12 19a8.5 8.5 0 0 0 0-14"></path>
+              </svg>
+            </div>
+            <div class="text-sm font-bold tracking-wide text-white/90" id="preview-card-title">
+              Kaspi Gold
+            </div>
+          </div>
+
+          <div class="mt-2">
+            <div class="text-[10px] text-white/70 font-medium uppercase tracking-wider">Баланс карты</div>
+            <div class="text-2xl font-black text-white tracking-tight" id="preview-balance">₸100 000</div>
+            <div class="flex justify-between items-end mt-1 text-[11px] text-white/80 font-mono-card">
+              <span id="preview-number">•••• 8824</span>
+              <span class="text-[9px] uppercase tracking-widest text-white/80" id="preview-holder">ALEN S.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form onsubmit="handleFormAddCard(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Банк / Стиль оформления</label>
+          <select id="card-preset" onchange="updateCardModalPreview()" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
+            <option value="kaspi">Kaspi Bank (Kaspi Gold • Рубиновый)</option>
+            <option value="bcc_iron">Банк ЦентрКредит (BCC #IronCard • Титан/Сталь)</option>
+            <option value="bcc_karta">Банк ЦентрКредит (BCC #картакарта • Изумруд)</option>
+            <option value="halyk">Halyk Bank (Халык Банк • Малахит)</option>
+            <option value="forte">ForteBank (Forte Black / Purple)</option>
+            <option value="jusan">Jusan Bank (Графит + Оранж)</option>
+            <option value="custom_ocean">Custom Deep Ocean (Сапфировый)</option>
+            <option value="custom_gold">Custom Platinum / Gold (Золотой)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Название карты</label>
+            <input type="text" id="card-name" oninput="updateCardModalPreview()" required value="Моя Карта" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Последние 4 цифры</label>
+            <input type="text" id="card-number" oninput="updateCardModalPreview()" required maxlength="4" placeholder="8824" value="8824" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Имя владельца (латиница)</label>
+            <input type="text" id="card-holder" oninput="updateCardModalPreview()" required value="ALEN S." class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Платёжная система</label>
+            <select id="card-ps" onchange="updateCardModalPreview()" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
+              <option value="VISA">VISA</option>
+              <option value="Mastercard">Mastercard</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Текущий баланс в тенге (₸)</label>
+          <input type="number" id="card-balance" oninput="updateCardModalPreview()" required value="100000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-base font-bold text-[#171717] focus:outline-none">
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-md transition">
+            Сохранить карту в стек
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL: ADD TRANSACTION -->
+  <div id="modal-tx" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl relative animate-scaleUp">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="modal-tx-title" class="font-bold text-base text-[#171717]">Новая операция</h3>
+        <button onclick="closeModal('modal-tx')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black">✕</button>
+      </div>
+
+      <form onsubmit="handleFormTransaction(event)" class="space-y-4">
+        <div class="grid grid-cols-3 gap-1 bg-[#EAE6DC] p-1 rounded-xl text-xs font-semibold">
+          <button type="button" onclick="setModalTxType('expense')" id="modal-type-expense" class="py-1.5 rounded-lg bg-white text-[#171717] shadow-xs">Расход</button>
+          <button type="button" onclick="setModalTxType('income')" id="modal-type-income" class="py-1.5 rounded-lg text-[#666]">Доход</button>
+          <button type="button" onclick="setModalTxType('transfer')" id="modal-type-transfer" class="py-1.5 rounded-lg text-[#666]">Перевод</button>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма в тенге (₸)</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-lg text-[#171717]">₸</span>
+            <input type="number" id="input-tx-amount" required placeholder="0" class="w-full bg-white border border-[#DFDAD0] rounded-xl pl-9 pr-4 py-2.5 text-2xl font-black text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#465948]">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Заметка / Место</label>
+          <input type="text" id="input-tx-note" required placeholder="Например: Magnum, Wolt, Зарплата" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+        </div>
+
+        <div id="modal-tx-account-row">
+          <label id="input-tx-account-label" class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт списания</label>
+          <select id="input-tx-account" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
+          </select>
+        </div>
+
+        <div id="modal-tx-to-account-row" class="hidden">
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт зачисления (Перевод)</label>
+          <select id="input-tx-to-account" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
+          </select>
+        </div>
+
+        <div id="modal-tx-category-row">
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Категория</label>
+          <select id="input-tx-category" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
+          </select>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3.5 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-md transition">
+            Сохранить операцию
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL: ACCRUE BCC INTEREST -->
+  <div id="modal-interest" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl relative animate-scaleUp">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-base text-[#171717]">💰 Зачислить проценты</h3>
+        <button onclick="closeModal('modal-interest')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black">✕</button>
+      </div>
+
+      <p class="text-xs text-[#7E7B73] mb-4">
+        Расчёт вознаграждения по депозиту Банка ЦентрКредит за расчётный месяц с капитализацией.
+      </p>
+
+      <form onsubmit="handleConfirmAccrueInterest(event)" class="space-y-4">
+        <input type="hidden" id="interest-account-id">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма вознаграждения (₸)</label>
+          <input type="number" id="input-interest-amount" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-xl font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 bg-[#465948] hover:bg-[#38483a] text-white text-xs font-semibold rounded-full shadow transition">
+            Подтвердить зачисление
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL: ADD RECURRING PAYMENT -->
+  <div id="modal-rec" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl relative animate-scaleUp">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-base text-[#171717]">📅 Новый регулярный платёж</h3>
+        <button onclick="closeModal('modal-rec')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black">✕</button>
+      </div>
+
+      <form onsubmit="handleFormRecurring(event)" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Название подписки / платежа</label>
+          <input type="text" id="rec-input-name" required placeholder="Например: Яндекс Плюс, Аренда" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма в тенге (₸)</label>
+          <input type="number" id="rec-input-amount" required placeholder="0" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-sm font-bold text-[#171717] focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">День месяца (1–31)</label>
+          <input type="number" id="rec-input-day" min="1" max="31" required value="10" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт оплаты</label>
+          <select id="rec-input-account" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
+          </select>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow transition">
+            Сохранить подписку
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL: ADD GOAL -->
+  <div id="modal-goal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl relative animate-scaleUp">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-base text-[#171717]">🎯 Новая финансовая цель</h3>
+        <button onclick="closeModal('modal-goal')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black">✕</button>
+      </div>
+
+      <form onsubmit="handleFormAddGoal(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Название цели</label>
+          <input type="text" id="goal-input-title" required placeholder="Например: Квартира, Резерв" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Целевая сумма (₸)</label>
+          <input type="number" id="goal-input-amount" required placeholder="500000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-sm font-bold text-[#171717] focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Привязать счёт</label>
+          <select id="goal-input-account" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
+          </select>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow transition">
+            Создать цель
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL: SET LIMITS -->
+  <div id="modal-limits" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl relative animate-scaleUp">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-base text-[#171717]">⚖️ Настройка лимитов</h3>
+        <button onclick="closeModal('modal-limits')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black">✕</button>
+      </div>
+
+      <form onsubmit="handleFormSetLimits(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Общий лимит расходов на месяц (₸)</label>
+          <input type="number" id="limit-input-total" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-base font-bold text-[#171717] focus:outline-none">
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow transition">
+            Сохранить лимит
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL: SETTINGS, BACKUP & EXPORT -->
+  <div id="modal-settings" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-scaleUp space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-[#ECE8DC]">
+        <h3 class="font-bold text-base text-[#171717]">⚙️ Настройки & Резервные копии</h3>
+        <button onclick="closeModal('modal-settings')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="p-4 bg-white border border-[#DFDAD0] rounded-2xl flex justify-between items-center">
+          <div>
+            <div class="font-bold text-[#171717]">💾 Экспорт базы (JSON)</div>
+            <div class="text-[11px] text-[#7E7B73]">Скачать резервную копию всех операций и счетов</div>
+          </div>
+          <button onclick="exportJsonBackup()" class="px-3 py-1.5 bg-[#EAE6DC] hover:bg-[#DDD8CD] font-semibold rounded-xl text-[#171717]">
+            Скачать
+          </button>
+        </div>
+
+        <div class="p-4 bg-white border border-[#DFDAD0] rounded-2xl flex justify-between items-center">
+          <div>
+            <div class="font-bold text-[#171717]">📊 Экспорт в Excel / CSV</div>
+            <div class="text-[11px] text-[#7E7B73]">Выгрузить все операции в таблицу</div>
+          </div>
+          <button onclick="exportCsvOperations()" class="px-3 py-1.5 bg-[#EAE6DC] hover:bg-[#DDD8CD] font-semibold rounded-xl text-[#171717]">
+            Скачать CSV
+          </button>
+        </div>
+
+        <div class="p-4 bg-white border border-[#DFDAD0] rounded-2xl flex justify-between items-center">
+          <div>
+            <div class="font-bold text-[#171717]">📥 Импорт базы (JSON)</div>
+            <div class="text-[11px] text-[#7E7B73]">Восстановить из файла .json</div>
+          </div>
+          <label class="px-3 py-1.5 bg-[#EAE6DC] hover:bg-[#DDD8CD] font-semibold rounded-xl text-[#171717] cursor-pointer">
+            Загрузить
+            <input type="file" id="import-file-input" accept=".json" onchange="importJsonBackup(event)" class="hidden">
+          </label>
+        </div>
+
+        <div class="p-4 bg-white border border-[#DFDAD0] rounded-2xl flex justify-between items-center">
+          <div>
+            <div class="font-bold text-red-600">Очистить данные (Чистый старт)</div>
+            <div class="text-[11px] text-[#7E7B73]">Сбросить все операции и начать свой учёт с нуля</div>
+          </div>
+          <button onclick="clearToCleanState()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold rounded-xl">
+            Очистить
+          </button>
+        </div>
+
+        <div class="p-4 bg-white border border-[#DFDAD0] rounded-2xl flex justify-between items-center">
+          <div>
+            <div class="font-bold text-[#171717]">Загрузить демо-данные Казахстана</div>
+            <div class="text-[11px] text-[#7E7B73]">Вернуть примеры счетов Kaspi и BCC</div>
+          </div>
+          <button onclick="resetToDefaults()" class="px-3 py-1.5 bg-[#EAE6DC] hover:bg-[#DDD8CD] text-[#171717] font-semibold rounded-xl">
+            Загрузить демо
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- FLOATING TOAST NOTIFICATION -->
+  <div id="toast-box" class="fixed bottom-6 right-6 z-50 transform transition-all duration-300 pointer-events-none opacity-0 translate-y-3">
+    <div id="toast-inner" class="bg-[#171717] text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2">
+      <span id="toast-icon">✓</span>
+      <span id="toast-msg">Готово</span>
+    </div>
+  </div>
+
+
+  <!-- SCRIPTS MODULE -->
+  <script type="module" src="./js/app.js?v=aqsha_canvas_v4"></script>
+
 </body>
 </html>
