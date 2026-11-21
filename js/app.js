@@ -1492,6 +1492,8 @@ function renderAll() {
   renderOperationsFeed();
   renderRecurringPayments();
   renderPlanWorkspace();
+  const txCount = document.getElementById('sidebar-tx-count');
+  if (txCount) txCount.innerText = String((state.transactions || []).length);
 }
 
 if ('serviceWorker' in navigator) {
