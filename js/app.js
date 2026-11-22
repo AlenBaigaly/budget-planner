@@ -780,41 +780,6 @@ window.handleDepositClose = function(event) {
   window.showToast(`Вклад закрыт: ₸${formatMoney(amount)} переведены на «${target.name}»`, '✓');
 };
 
-window.openDepositTopUp = function(depositId) {
-  const deposit = state.accounts.find((account) => account.id === depositId);
-  if (!deposit) return;
-  window.openModal('tx', 'transfer');
-  const target = document.getElementById('input-tx-to-account');
-  if (target) target.value = depositId;
-  document.getElementById('input-tx-note').value = `Пополнение вклада «${deposit.name}»`;
-  document.getElementById('input-tx-amount').focus();
-};
-
-function renderDepositWorkspace() {
-  const container = document.getElementById('deposits-workspace-list');
-  if (!container) return;
-  const balances = getAccountBalances();
-  const deposits = state.accounts.filter((account) => account.type === 'deposit');
-  if (!deposits.length) {
-    container.innerHTML = `<div class="lg:col-span-2 bg-[#FAF9F5] border border-dashed border-[#DFDAD0] rounded-3xl p-10 text-center"><div class="text-4xl mb-3">🏦</div><div class="font-bold text-[#171717]">Нет открытых вкладов</div><p class="text-xs text-[#7E7B73] mt-2">Открой вклад BCC и выбери, с какого счёта перевести деньги.</p><button onclick="openDepositEditor()" class="mt-4 px-4 py-2 bg-[#171717] text-white text-xs font-semibold rounded-full">Открыть вклад</button></div>`;
-    return;
-  }
-  container.innerHTML = deposits.map((deposit) => {
-    const balance = balances[deposit.id] || 0;
-    const config = getDepositConfig(deposit.subType);
-    const endDate = deposit.endDate || calculateMaturityDate(deposit.startDate || new Date().toISOString().split('T')[0], deposit.termMonths || config.defaultTermMonths).toISOString().split('T')[0];
-    const days = getDaysRemaining(endDate);
-    const monthInterest = calculateMonthlyInterestAccrual(deposit.nominalRate || config.defaultNominalRate, balance);
-    const forecast = calculateDepositForecast({ principal: balance, nominalRate: deposit.nominalRate || config.defaultNominalRate, termMonths: Math.max(1, deposit.termMonths || config.defaultTermMonths), startDate: deposit.startDate });
-    return `<article class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs">
-      <div class="flex justify-between gap-4"><div><div class="text-[10px] uppercase font-bold tracking-wider text-[#7E7B73]">BCC ${deposit.subType === 'champion' ? '«Чемпион»' : '«Моя цель»'}</div><h2 class="font-bold text-lg text-[#171717] mt-1">${deposit.icon || '🏦'} ${deposit.name}</h2></div><div class="text-right"><div class="text-[10px] text-[#7E7B73]">Текущий остаток</div><div class="font-black text-xl text-[#171717]">₸${formatMoney(balance)}</div></div></div>
-      <div class="grid grid-cols-3 gap-2 mt-5 text-xs"><div class="bg-white border border-[#E8E4DA] rounded-xl p-3"><div class="text-[#7E7B73]">Ставка</div><div class="font-bold mt-1">${deposit.nominalRate || config.defaultNominalRate}%</div></div><div class="bg-white border border-[#E8E4DA] rounded-xl p-3"><div class="text-[#7E7B73]">Доход / мес.</div><div class="font-bold mt-1 text-emerald-700">+₸${formatMoney(monthInterest)}</div></div><div class="bg-white border border-[#E8E4DA] rounded-xl p-3"><div class="text-[#7E7B73]">Осталось</div><div class="font-bold mt-1">${days > 0 ? `${days} дн.` : 'Срок вышел'}</div></div></div>
-      <div class="mt-4 text-xs text-[#7E7B73]">Прогноз к концу срока: <b class="text-[#171717]">₸${formatMoney(forecast?.finalAmount || balance)}</b> · окончание ${endDate}</div>
-      <div class="mt-5 flex flex-wrap gap-2"><button onclick="openDepositTopUp('${deposit.id}')" class="px-3 py-2 bg-[#465948] text-white text-xs font-semibold rounded-xl">+ Пополнить</button><button onclick="openDepositClose('${deposit.id}')" class="px-3 py-2 bg-[#EAE6DC] hover:bg-[#DED8CB] text-xs font-semibold rounded-xl">Закрыть вклад</button></div>
-    </article>`;
-  }).join('');
-}
-
 // -------------------------------------------------------------
 // RENDERERS: CAPITAL WORKSPACE
 // -------------------------------------------------------------
@@ -979,7 +944,7 @@ window.filterTxType = function(type, btn) {
 };
 
 window.switchScreen = function(screen, focusId = null) {
-  const screens = ['capital', 'deposits', 'operations', 'plan'];
+  const screens = ['capital', 'operations', 'plan'];
   const selected = screens.includes(screen) ? screen : 'capital';
 
   screens.forEach((name) => {
@@ -1696,14 +1661,11 @@ function renderAll() {
   populateSelectAccounts();
   populateSelectCategories();
   renderCapitalWorkspace();
-  renderDepositWorkspace();
   renderOperationsFeed();
   renderRecurringPayments();
   renderPlanWorkspace();
   const txCount = document.getElementById('sidebar-tx-count');
   if (txCount) txCount.innerText = String((state.transactions || []).length);
-  const depositCount = document.getElementById('sidebar-deposit-count');
-  if (depositCount) depositCount.innerText = String(state.accounts.filter((account) => account.type === 'deposit').length);
 }
 
 if ('serviceWorker' in navigator) {
