@@ -1,14 +1,17 @@
-const CACHE_NAME = 'aqsha-budget-import-v5';
+const CACHE_NAME = 'aqsha-budget-bcc-pdf-v6';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_import_v5',
+  './js/app.js?v=aqsha_bcc_pdf_v6',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v4',
   './js/imports/core.js',
   './js/imports/generic-csv.js',
   './js/imports/adapters.js',
+  './js/imports/bcc-pdf.js',
+  './vendor/pdf.min.mjs',
+  './vendor/pdf.worker.min.mjs',
   './vendor/tesseract.esm.min.js',
   './vendor/tesseract-worker.min.js',
   './js/bcc-deposits.js',

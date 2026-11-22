@@ -1,4 +1,5 @@
 import { parseGenericCsv } from './generic-csv.js';
+import { parseBccPdf } from './bcc-pdf.js';
 
 const ext = (file) => (file?.name || '').split('.').pop().toLowerCase();
 const textFile = (file) => ['csv', 'txt'].includes(ext(file));
@@ -12,6 +13,11 @@ function factory(id, bank, keywords) {
 }
 
 export const bankAdapters = [
+  {
+    id: 'bcc-pdf', bank: 'BCC',
+    canHandle(file) { return ext(file) === 'pdf'; },
+    parse: parseBccPdf
+  },
   factory('kaspi-csv', 'Kaspi', ['kaspi']),
   factory('bcc-csv', 'BCC', ['bcc', 'центркредит']),
   {
@@ -23,6 +29,6 @@ export const bankAdapters = [
 
 export function unsupportedFileMessage(file) {
   const extension = ext(file);
-  if (['pdf', 'xlsx', 'xls'].includes(extension)) return `Формат .${extension} будет подключён после добавления локальных библиотек и проверки образца выписки.`;
+  if (['xlsx', 'xls'].includes(extension)) return `Формат .${extension} будет подключён после добавления локальных библиотек и проверки образца выписки.`;
   return 'Поддерживаются CSV/TXT с таблицей операций. Формат файла не распознан.';
 }

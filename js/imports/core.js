@@ -53,7 +53,15 @@ export function findDuplicates(operations, transactions, accountId = '') {
   const seen = new Set();
   return operations.map((operation) => {
     const fingerprint = makeOperationFingerprint({ ...operation, accountHint: accountId || operation.accountHint });
-    const duplicate = existing.has(fingerprint) || seen.has(fingerprint);
+    const normalizedDescription = String(operation.description || '').toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+    const legacyMatch = (transactions || []).some((tx) => {
+      if (tx.accountId && accountId && tx.accountId !== accountId) return false;
+      if ((tx.date || '') !== operation.date || Math.abs(Number(tx.amount || 0) - Number(operation.amount || 0)) > 0.009) return false;
+      if (tx.type !== operation.type && tx.type !== 'transfer') return false;
+      const txText = String(tx.note || '').toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+      return normalizedDescription.length > 3 && (txText.includes(normalizedDescription) || normalizedDescription.includes(txText));
+    });
+    const duplicate = existing.has(fingerprint) || seen.has(fingerprint) || legacyMatch;
     seen.add(fingerprint);
     return { ...operation, fingerprint, duplicate };
   });
