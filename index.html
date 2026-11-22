@@ -710,6 +710,9 @@
             </button>
           </div>
 
+          <button onclick="openReceiptImportModal()" class="px-4 py-2 bg-[#EAE6DC] hover:bg-[#DDD8CD] text-[#171717] text-xs font-semibold rounded-full transition">
+            ⌁ Импорт квитанции
+          </button>
           <button onclick="openModal('tx', 'expense')" class="px-4 py-2 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-sm transition">
             + Операция
           </button>
@@ -1054,6 +1057,17 @@
           <input type="text" id="input-tx-note" required placeholder="Например: Magnum, Wolt, Зарплата" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
         </div>
 
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Дата операции</label>
+            <input type="date" id="input-tx-date" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Время</label>
+            <input type="time" id="input-tx-time" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+          </div>
+        </div>
+
         <div id="modal-tx-account-row">
           <label id="input-tx-account-label" class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт списания</label>
           <select id="input-tx-account" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none">
@@ -1078,6 +1092,34 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LOCAL RECEIPT IMPORT -->
+  <div id="modal-receipt-import" class="fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-scaleUp">
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h3 class="font-bold text-base text-[#171717]">⌁ Импорт квитанции</h3>
+          <p class="text-[11px] text-[#7E7B73] mt-1">BCC, Kaspi и другие банковские квитанции</p>
+        </div>
+        <button onclick="closeModal('modal-receipt-import')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black">✕</button>
+      </div>
+
+      <div class="rounded-2xl bg-[#EEF2EC] border border-[#D7E1D5] p-3 text-[11px] leading-relaxed text-[#465948] mb-4">
+        Фото распознаётся прямо на устройстве. Квитанция не загружается в AQSHA или Firebase. Перед сохранением ты сможешь проверить сумму, дату, счёт и тип операции.
+      </div>
+
+      <div class="space-y-3">
+        <label class="block text-[11px] font-semibold text-[#7E7B73]">Фото / скриншот квитанции</label>
+        <input id="receipt-import-file" type="file" accept="image/*,.txt,text/plain" onchange="handleReceiptFile(event)" class="block w-full text-xs text-[#5D5A53] file:mr-3 file:border-0 file:rounded-full file:bg-[#EAE6DC] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[#171717] hover:file:bg-[#DDD8CD]">
+        <p class="text-[10px] text-[#8E8B83]">Поддерживаются скриншоты/фото и .txt. PDF пока открой в BCC и сделай скриншот квитанции.</p>
+
+        <div class="flex items-center gap-2 text-[11px] text-[#8E8B83]"><span class="h-px flex-1 bg-[#E2DDD2]"></span>или вставь текст квитанции<span class="h-px flex-1 bg-[#E2DDD2]"></span></div>
+        <textarea id="receipt-import-text" rows="7" placeholder="Вставь текст из «Поделиться квитанцией» — например сумму, дату, получателя и назначение платежа" class="w-full resize-none bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] placeholder-[#9B978D] focus:outline-none focus:ring-1 focus:ring-[#465948]"></textarea>
+        <div id="receipt-import-status" class="min-h-4 text-[11px] text-[#7E7B73]"></div>
+        <button type="button" onclick="prepareReceiptImport()" class="w-full py-3 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-md transition">Распознать и заполнить операцию</button>
+      </div>
     </div>
   </div>
 
@@ -1284,7 +1326,7 @@
 
 
   <!-- SCRIPTS MODULE -->
-  <script type="module" src="./js/app.js?v=aqsha_card_themes_v1"></script>
+  <script type="module" src="./js/app.js?v=aqsha_receipt_import_v2"></script>
 
 </body>
 </html>

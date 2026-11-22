@@ -27,6 +27,8 @@ import {
   syncStateToCloud
 } from './firebase-config.js';
 
+import Tesseract from '../vendor/tesseract.esm.min.js';
+
 // Keep the established key so the existing planner data is available right
 // away after the redesign. The AQSHA key is only a fallback for local drafts.
 const STORAGE_KEY = 'budget_planner_state_v1';
@@ -420,6 +422,12 @@ function getAccountBalances() {
 function formatMoney(amount) {
   const num = Math.round(Number(amount) || 0);
   return num.toLocaleString('ru-RU');
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+  }[character]));
 }
 
 // -------------------------------------------------------------
@@ -1107,7 +1115,7 @@ window.renderOperationsFeed = function() {
           <div class="flex items-center gap-3">
             <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${dotColor}"></span>
             <div>
-              <div class="font-bold text-sm text-[#171717]">${tx.note || 'Операция'}</div>
+              <div class="font-bold text-sm text-[#171717]">${escapeHtml(tx.note || 'Операция')}</div>
               <div class="text-[11px] text-[#7E7B73]">${tx.time || ''} • ${acc ? acc.name : ''} ${cat ? '• ' + cat.name : ''}</div>
             </div>
           </div>
@@ -1272,12 +1280,155 @@ function renderAnalyticsChart() {
 // -------------------------------------------------------------
 let currentModalTxType = 'expense';
 
+function getLocalDateValue(date = new Date()) {
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return offsetDate.toISOString().slice(0, 10);
+}
+
+function getLocalTimeValue(date = new Date()) {
+  return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function setReceiptImportStatus(message, tone = 'muted') {
+  const el = document.getElementById('receipt-import-status');
+  if (!el) return;
+  el.className = `min-h-4 text-[11px] ${tone === 'error' ? 'text-red-700' : tone === 'success' ? 'text-emerald-700' : 'text-[#7E7B73]'}`;
+  el.textContent = message;
+}
+
+function parseReceiptDate(text) {
+  const isoMatch = text.match(/\b(20\d{2})[./-](\d{1,2})[./-](\d{1,2})\b/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+  const match = text.match(/\b(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})\b/);
+  if (!match) return getLocalDateValue();
+  const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+  return `${year}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+}
+
+function guessReceiptCategory(text, type) {
+  if (type === 'income') {
+    return /зарплат|оклад|стипенд/i.test(text) ? 'cat_salary' : 'cat_invest';
+  }
+  if (/taxi|такси|indrive|yandex go|яндекс go|азс|заправ/i.test(text)) return 'cat_transport';
+  if (/magnum|galmart|продукт|супермаркет|market/i.test(text)) return 'cat_food';
+  if (/wolt|glovo|кафе|coffee|ресторан/i.test(text)) return 'cat_dining';
+  if (/аптек|clinic|медиц|health/i.test(text)) return 'cat_health';
+  if (/аренд|жкх|коммун|alser|алсеко/i.test(text)) return 'cat_home';
+  if (/spotify|netflix|подписк|кино|отдых/i.test(text)) return 'cat_leisure';
+  if (/одежд|магазин|покупк|wildberries|ozon/i.test(text)) return 'cat_shopping';
+  return 'cat_other';
+}
+
+function parseReceiptText(rawText) {
+  const text = rawText.replace(/\u00a0/g, ' ').replace(/\r/g, '').replace(/[ \t]+/g, ' ').trim();
+  const amountPatterns = [
+    /(?:сумма(?:\s+(?:платежа|перевода|операции))?|итого|к оплате|оплачено|зачислено|списано)[^\d]{0,28}(\d[\d ]*(?:[,.]\d{1,2})?)\s*(?:₸|тг|тенге)/i,
+    /(\d[\d ]*(?:[,.]\d{1,2})?)\s*(?:₸|тг|тенге)/i
+  ];
+  const amountMatch = amountPatterns.map((pattern) => text.match(pattern)).find(Boolean);
+  const amount = amountMatch ? Number(amountMatch[1].replace(/\s/g, '').replace(',', '.')) : 0;
+  const isIncome = /(?:зачислен|поступлен|пополнен|получен)/i.test(text) && !/(?:не зачислен|отклонен)/i.test(text);
+  const looksLikeExternalTransfer = /(?:перевод|получател|на карту|по номеру|номер телефона|p2p)/i.test(text);
+  const type = isIncome ? 'income' : 'expense';
+  const labelledLine = text.split('\n').map((line) => line.trim()).find((line) => /(?:получател|магазин|наименование|назначение|комментарий|merchant)/i.test(line) && line.length < 110);
+  const usefulLine = text.split('\n').map((line) => line.trim()).find((line) => line.length >= 3 && line.length <= 80 && !/(?:квитанц|bcc|банк|сумма|₸|тг|тенге|дата|время|чек|операц|успеш)/i.test(line));
+  let note = (labelledLine || usefulLine || (looksLikeExternalTransfer ? 'Перевод из BCC' : 'Оплата из BCC'))
+    .replace(/^(?:получател(?:ь)?|магазин|наименование|назначение|комментарий|merchant)\s*[:—-]?\s*/i, '')
+    .slice(0, 110);
+  if (looksLikeExternalTransfer && !/^Перевод/i.test(note)) note = `Перевод: ${note}`;
+  // A dot is deliberately excluded here: in a receipt "22.11.2026" is a date,
+  // not 22:11. BCC/Kaspi display time with a colon.
+  const timeMatch = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  return {
+    amount,
+    type,
+    categoryId: guessReceiptCategory(text, type),
+    date: parseReceiptDate(text),
+    time: timeMatch ? `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}` : getLocalTimeValue(),
+    note: note || (type === 'income' ? 'Поступление из BCC' : 'Оплата из BCC'),
+    looksLikeExternalTransfer
+  };
+}
+
+window.openReceiptImportModal = function() {
+  const input = document.getElementById('receipt-import-file');
+  const text = document.getElementById('receipt-import-text');
+  if (input) input.value = '';
+  if (text) text.value = '';
+  setReceiptImportStatus('');
+  document.getElementById('modal-receipt-import')?.classList.remove('hidden');
+};
+
+window.handleReceiptFile = async function(event) {
+  const file = event.target.files?.[0];
+  const textArea = document.getElementById('receipt-import-text');
+  if (!file || !textArea) return;
+
+  if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+    textArea.value = await file.text();
+    setReceiptImportStatus('Текст квитанции добавлен. Нажми «Распознать».', 'success');
+    return;
+  }
+  if (!file.type.startsWith('image/')) {
+    setReceiptImportStatus('Выбери скриншот/фото или .txt. PDF можно открыть и сохранить как скриншот.', 'error');
+    return;
+  }
+  if (!Tesseract?.recognize) {
+    setReceiptImportStatus('Модуль распознавания ещё загружается. Подожди несколько секунд и выбери фото снова.', 'error');
+    return;
+  }
+
+  try {
+    setReceiptImportStatus('Распознаю текст на этом устройстве…');
+    const result = await Tesseract.recognize(file, 'rus+eng', {
+      workerPath: './vendor/tesseract-worker.min.js',
+      logger: (message) => {
+        if (message.status === 'recognizing text' && typeof message.progress === 'number') {
+          setReceiptImportStatus(`Распознаю текст на этом устройстве: ${Math.round(message.progress * 100)}%`);
+        }
+      }
+    });
+    textArea.value = result.data.text.trim();
+    setReceiptImportStatus('Готово. Проверь распознанный текст и нажми «Распознать».', 'success');
+  } catch (error) {
+    console.warn('Receipt OCR failed:', error);
+    setReceiptImportStatus('Не получилось прочитать фото. Вставь текст из «Поделиться квитанцией» вручную.', 'error');
+  }
+};
+
+window.prepareReceiptImport = function() {
+  const rawText = document.getElementById('receipt-import-text')?.value || '';
+  if (rawText.trim().length < 3) {
+    setReceiptImportStatus('Добавь фото квитанции или вставь её текст.', 'error');
+    return;
+  }
+  const draft = parseReceiptText(rawText);
+  if (!draft.amount) {
+    setReceiptImportStatus('Не нашёл сумму в тенге. Впиши её в поле операции после импорта.', 'error');
+  }
+  window.closeModal('modal-receipt-import');
+  window.openModal('tx', draft.type);
+  document.getElementById('input-tx-amount').value = draft.amount || '';
+  document.getElementById('input-tx-note').value = draft.note;
+  document.getElementById('input-tx-date').value = draft.date;
+  document.getElementById('input-tx-time').value = draft.time;
+  const category = document.getElementById('input-tx-category');
+  if (category && [...category.options].some((option) => option.value === draft.categoryId)) category.value = draft.categoryId;
+  window.showToast(draft.looksLikeExternalTransfer
+    ? 'Перевод другому человеку отмечен как расход — выбери свой счёт списания и проверь данные.'
+    : 'Черновик операции заполнен. Проверь данные и нажми «Сохранить».', '⌁');
+};
+
 window.openModal = function(modalType, subType = 'expense', preselectedAcc = null) {
   if (modalType === 'tx') {
     window.setModalTxType(subType);
     populateSelectAccounts(preselectedAcc);
     populateSelectCategories();
     document.getElementById('modal-tx').classList.remove('hidden');
+    const dateInput = document.getElementById('input-tx-date');
+    const timeInput = document.getElementById('input-tx-time');
+    if (dateInput && !dateInput.value) dateInput.value = getLocalDateValue();
+    if (timeInput && !timeInput.value) timeInput.value = getLocalTimeValue();
     document.getElementById('input-tx-amount').focus();
   } else if (modalType === 'rec') {
     populateSelectAccounts();
@@ -1390,6 +1541,8 @@ window.handleFormTransaction = function(e) {
   const accountId = document.getElementById('input-tx-account').value;
   const toAccountId = document.getElementById('input-tx-to-account').value;
   const categoryId = document.getElementById('input-tx-category').value;
+  const date = document.getElementById('input-tx-date').value || getLocalDateValue();
+  const time = document.getElementById('input-tx-time').value || getLocalTimeValue();
 
   if (!amount || !note) return;
 
@@ -1397,8 +1550,8 @@ window.handleFormTransaction = function(e) {
     id: 'tx_' + Date.now(),
     type: currentModalTxType,
     amount: amount,
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    date,
+    time,
     accountId: accountId,
     toAccountId: currentModalTxType === 'transfer' ? toAccountId : '',
     categoryId: currentModalTxType !== 'transfer' ? categoryId : '',
