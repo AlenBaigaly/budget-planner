@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-v6';
+const CACHE_NAME = 'aqsha-budget-v5';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_canvas_v6',
+  './js/app.js?v=aqsha_canvas_v4',
   './js/bcc-deposits.js',
   './js/analytics.js',
   './js/firebase-config.js',
