@@ -33,22 +33,32 @@ const STORAGE_KEY = 'budget_planner_state_v1';
 const AQSHA_STORAGE_KEY = 'aqsha_budget_state_v2';
 let applyingRemoteState = false;
 
-// Authentic styles & solid opaque backgrounds for all bank presets
+// Bank-card themes inspired by the visual language of the real products.
+// They are illustrations only: no real card details or numbers are displayed.
 const CARD_THEMES = {
   kaspi: {
-    bgStyle: 'background: linear-gradient(135deg, #9E1B25 0%, #82131C 50%, #5C0A11 100%) !important; background-color: #82131C !important; color: #FFFFFF !important; border: 1px solid #B32733 !important;',
-    bankName: '<div class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-[#82131C]"></div></div><span class="font-extrabold text-sm tracking-tight text-white">kaspi.kz</span></div>',
-    sub: '<span class="text-xs font-black italic tracking-wider text-white">VISA</span>'
+    bgStyle: 'background: radial-gradient(circle at 88% 8%, rgba(255,255,255,.58), transparent 26%), linear-gradient(118deg, #F7E5A6 0%, #D9AD45 38%, #AA7418 69%, #6E4710 100%) !important; background-color: #D9AD45 !important; color: #30220E !important; border: 1px solid #C18D29 !important;',
+    bankName: '<div class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded-full bg-[#3B290F] flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-[#ECCA71]"></div></div><span class="font-extrabold text-sm tracking-tight text-[#30220E]">kaspi.kz</span></div>',
+    sub: '<span class="text-xs font-black italic tracking-wider text-[#30220E]">VISA</span>',
+    text: '#30220E',
+    muted: 'rgba(48,34,14,.70)',
+    decor: '<div style="position:absolute;right:-48px;bottom:-92px;width:230px;height:230px;border-radius:50%;border:30px solid rgba(77,46,5,.13)"></div>'
   },
   bcc_iron: {
-    bgStyle: 'background: linear-gradient(135deg, #242629 0%, #1A1B1D 50%, #0E0F10 100%) !important; background-color: #1A1B1D !important; color: #FFFFFF !important; border: 1px solid #3E4044 !important;',
-    bankName: '<span class="text-emerald-400 font-black text-sm">BCC</span> <span class="text-neutral-400 font-light text-xs">| Банк ЦентрКредит</span>',
-    sub: '<span class="text-xs font-black italic tracking-widest text-white">VISA</span><div class="text-[8px] uppercase tracking-widest text-neutral-400 font-semibold -mt-1">Infinite</div>'
+    bgStyle: 'background: repeating-linear-gradient(0deg, rgba(255,255,255,.09) 0 1px, rgba(0,0,0,.08) 1px 3px), linear-gradient(122deg, #E3E7E5 0%, #9BA09F 24%, #464B4B 54%, #111415 78%, #5E6463 100%) !important; background-color: #575D5C !important; color: #FFFFFF !important; border: 1px solid #C3C8C5 !important;',
+    bankName: '<span class="font-black text-sm text-white tracking-tight">BCC</span> <span class="text-white/70 font-medium text-[10px]">Банк ЦентрКредит</span>',
+    sub: '<span class="text-xs font-black italic tracking-widest text-white">VISA</span><div class="text-[8px] uppercase tracking-widest text-white/65 font-semibold -mt-1">Infinite</div>',
+    text: '#FFFFFF',
+    muted: 'rgba(255,255,255,.72)',
+    decor: '<div style="position:absolute;left:-46px;top:32px;width:160px;height:160px;transform:rotate(45deg);border:28px solid rgba(255,255,255,.12);border-radius:25px"></div>'
   },
   bcc_karta: {
-    bgStyle: 'background: linear-gradient(135deg, #1B5E43 0%, #144A34 50%, #0A291C 100%) !important; background-color: #144A34 !important; color: #FFFFFF !important; border: 1px solid #2B7D5C !important;',
-    bankName: '<span class="font-black text-emerald-300 text-sm">BCC</span> <span class="text-[11px] text-emerald-100 font-medium">Кредитная</span>',
-    sub: '<div class="flex -space-x-2"><div class="w-4 h-4 rounded-full bg-red-500 opacity-90"></div><div class="w-4 h-4 rounded-full bg-amber-400 opacity-90"></div></div>'
+    bgStyle: 'background: radial-gradient(circle at 18% 20%, rgba(187,223,187,.25) 0 3px, transparent 4px) 0 0/24px 24px, linear-gradient(135deg, #1B634B 0%, #0E4937 46%, #062E23 100%) !important; background-color: #0E4937 !important; color: #FFFFFF !important; border: 1px solid #4D8C6E !important;',
+    bankName: '<span class="font-black text-sm text-white">BCC</span> <span class="text-[11px] text-emerald-100 font-medium">#картакарта</span>',
+    sub: '<div class="flex -space-x-2"><div class="w-4 h-4 rounded-full bg-red-500 opacity-90"></div><div class="w-4 h-4 rounded-full bg-amber-400 opacity-90"></div></div>',
+    text: '#FFFFFF',
+    muted: 'rgba(255,255,255,.74)',
+    decor: '<div style="position:absolute;right:-38px;top:12px;width:186px;height:186px;opacity:.23;background:repeating-conic-gradient(from 45deg, #D7E9B8 0 7deg, transparent 7deg 14deg);border-radius:50%"></div>'
   },
   halyk: {
     bgStyle: 'background: linear-gradient(135deg, #00664F 0%, #004D3C 50%, #003328 100%) !important; background-color: #004D3C !important; color: #FFFFFF !important; border: 1px solid #008265 !important;',
@@ -482,33 +492,34 @@ function renderCardsDeck() {
       <div id="card-elem-${index}" onclick="selectCard(${index})"
            class="bank-card ${posClass}"
            style="${presetTheme.bgStyle}">
+        ${presetTheme.decor || ''}
 
-        <div class="flex justify-between items-start">
+        <div class="relative z-10 flex justify-between items-start">
           <div class="flex items-center gap-1.5">${presetTheme.bankName}</div>
           <div>${presetTheme.sub}</div>
         </div>
 
-        <div class="flex justify-between items-center my-3.5">
+        <div class="relative z-10 flex justify-between items-center my-3.5">
           <div class="flex items-center gap-3">
             <div class="emv-chip"></div>
-            <svg class="w-5 h-5 text-white/80 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="w-5 h-5 opacity-80" style="color:${presetTheme.text || '#FFFFFF'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M8.5 16.5a5 5 0 0 1 0-9"></path>
               <path d="M12 19a8.5 8.5 0 0 0 0-14"></path>
             </svg>
           </div>
-          <div class="text-base font-bold tracking-tight text-white/95 font-mono-card">
+          <div class="text-base font-bold tracking-tight font-mono-card" style="color:${presetTheme.text || '#FFFFFF'}">
             ${acc.name}
           </div>
         </div>
 
-        <div class="mt-2">
-          <div class="text-[10px] text-white/70 font-medium uppercase tracking-wider">
+        <div class="relative z-10 mt-2">
+          <div class="text-[10px] font-medium uppercase tracking-wider" style="color:${presetTheme.muted || 'rgba(255,255,255,.70)'}">
             ${acc.isCreditLimit ? 'Кредитный лимит' : 'Баланс карты'}
           </div>
-          <div class="text-2xl font-black text-white tracking-tight">₸${formatMoney(cardBal)}</div>
-          <div class="flex justify-between items-end mt-1 text-[11px] text-white/80 font-mono-card">
+          <div class="text-2xl font-black tracking-tight" style="color:${presetTheme.text || '#FFFFFF'}">₸${formatMoney(cardBal)}</div>
+          <div class="flex justify-between items-end mt-1 text-[11px] font-mono-card" style="color:${presetTheme.muted || 'rgba(255,255,255,.80)'}">
             <span>${acc.maskedNumber || '•••• ****'}</span>
-            <span class="text-[9px] uppercase tracking-widest text-white/80">${acc.holderName || 'CARDHOLDER'}</span>
+            <span class="text-[9px] uppercase tracking-widest">${acc.holderName || 'CARDHOLDER'}</span>
           </div>
         </div>
       </div>

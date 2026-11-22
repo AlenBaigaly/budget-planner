@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-deposits-white-v1';
+const CACHE_NAME = 'aqsha-budget-card-themes-v1';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_deposits_white_v1',
+  './js/app.js?v=aqsha_card_themes_v1',
   './js/bcc-deposits.js',
   './js/analytics.js',
   './js/firebase-config.js',
