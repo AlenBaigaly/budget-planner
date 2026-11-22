@@ -221,6 +221,15 @@
           </div>
         </button>
 
+        <button onclick="switchScreen('deposits')" id="nav-deposits" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[#6B6860] hover:text-[#171717] hover:bg-[#EAE6DB] transition-all">
+          <span class="text-base">🏦</span>
+          <div class="text-left">
+            <div class="leading-tight">Вклады BCC</div>
+            <div class="text-[10px] text-neutral-400 font-normal">Открыть, пополнить, закрыть</div>
+          </div>
+          <span class="ml-auto text-[10px] bg-[#E3DFD4] text-[#555] px-2 py-0.5 rounded-full" id="sidebar-deposit-count">0</span>
+        </button>
+
         <!-- 2. Журнал & Календарь -->
         <button onclick="switchScreen('operations')" id="nav-operations" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[#6B6860] hover:text-[#171717] hover:bg-[#EAE6DB] transition-all">
           <span class="text-base">🧾</span>
@@ -556,9 +565,24 @@
 
     </section>
 
+    <!-- ============================================================ -->
+    <!-- SCREEN 2: BCC DEPOSITS                                      -->
+    <!-- ============================================================ -->
+    <section id="workspace-deposits" class="workspace-pane hidden p-5 sm:p-8 lg:p-10 max-w-6xl mx-auto w-full space-y-7 animate-fadeIn">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E8E4DA] pb-5">
+        <div>
+          <div class="text-[11px] uppercase tracking-widest text-[#7E7B73] font-bold mb-1">Банк ЦентрКредит</div>
+          <h1 class="font-editorial text-4xl sm:text-5xl text-[#171717]">Мои <span class="text-[#465948] italic">вклады.</span></h1>
+          <p class="text-xs text-[#7E7B73] mt-1">Все открытые вклады, прогноз дохода и управление деньгами.</p>
+        </div>
+        <button onclick="openDepositEditor()" class="px-5 py-2.5 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-sm transition">+ Открыть вклад BCC</button>
+      </div>
+      <div id="deposits-workspace-list" class="grid grid-cols-1 lg:grid-cols-2 gap-5"></div>
+    </section>
+
 
     <!-- ============================================================ -->
-    <!-- SCREEN 2: ЖУРНАЛ ОПЕРАЦИЙ & КАЛЕНДАРЬ ПЛАТЕЖЕЙ              -->
+    <!-- SCREEN 3: ЖУРНАЛ ОПЕРАЦИЙ & КАЛЕНДАРЬ ПЛАТЕЖЕЙ              -->
     <!-- ============================================================ -->
     <section id="workspace-operations" class="workspace-pane hidden p-5 sm:p-8 lg:p-10 max-w-6xl mx-auto w-full space-y-7 animate-fadeIn">
 
