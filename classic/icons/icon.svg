@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <linearGradient id="tengeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#06b6d4" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect width="128" height="128" rx="28" fill="url(#bgGrad)" stroke="#334155" stroke-width="2" />
+
+  <!-- Outer Ring / Circle -->
+  <circle cx="64" cy="64" r="42" fill="none" stroke="url(#accentGrad)" stroke-width="3" opacity="0.4" />
+  <circle cx="64" cy="64" r="36" fill="#131d31" stroke="url(#accentGrad)" stroke-width="2" filter="url(#glow)" />
+
+  <!-- Tenge Currency Symbol (₸) - Clean Modern Lines -->
+  <!-- Upper horizontal line -->
+  <line x1="46" y1="46" x2="82" y2="46" stroke="url(#tengeGrad)" stroke-width="5" stroke-linecap="round" />
+  <!-- Lower horizontal line -->
+  <line x1="46" y1="56" x2="82" y2="56" stroke="url(#tengeGrad)" stroke-width="5" stroke-linecap="round" />
+  <!-- Vertical pillar -->
+  <line x1="64" y1="56" x2="64" y2="82" stroke="url(#tengeGrad)" stroke-width="5" stroke-linecap="round" />
+</svg>
