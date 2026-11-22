@@ -1,9 +1,10 @@
-const CACHE_NAME = 'aqsha-budget-receipt-import-v2';
+const CACHE_NAME = 'aqsha-budget-storage-v3';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_receipt_import_v2',
+  './js/app.js?v=aqsha_storage_v3',
+  './js/storage.js',
   './vendor/tesseract.esm.min.js',
   './vendor/tesseract-worker.min.js',
   './js/bcc-deposits.js',

@@ -29,11 +29,17 @@ import {
 
 import Tesseract from '../vendor/tesseract.esm.min.js';
 
+import {
+  initializeStateStorage,
+  saveStateToIndexedDB
+} from './storage.js';
+
 // Keep the established key so the existing planner data is available right
 // away after the redesign. The AQSHA key is only a fallback for local drafts.
 const STORAGE_KEY = 'budget_planner_state_v1';
 const AQSHA_STORAGE_KEY = 'aqsha_budget_state_v2';
 let applyingRemoteState = false;
+let storageReady = false;
 
 // Bank-card themes inspired by the visual language of the real products.
 // They are illustrations only: no real card details or numbers are displayed.
@@ -383,10 +389,13 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    if (!applyingRemoteState) syncStateToCloud(state);
+    saveStateToIndexedDB(state).catch((err) => {
+      console.warn('Ошибка сохранения в IndexedDB:', err);
+      window.showToast?.('Не удалось сохранить данные на устройстве. Освободи место в браузере.', '⚠️');
+    });
+    if (storageReady && !applyingRemoteState) syncStateToCloud(state);
   } catch (err) {
-    console.warn('Error saving state:', err);
+    console.warn('Error scheduling state save:', err);
   }
 }
 
@@ -1843,14 +1852,29 @@ document.addEventListener('DOMContentLoaded', () => {
     if (event.type === 'remote-state' && event.data) {
       applyingRemoteState = true;
       state = normalizeState(event.data);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      saveStateToIndexedDB(state).catch((err) => console.warn('Не удалось сохранить облачные данные локально:', err));
       applyingRemoteState = false;
       renderAll();
     }
-    if (event.type === 'missing-remote-state') syncStateToCloud(state, 0);
+    if (event.type === 'missing-remote-state' && storageReady) syncStateToCloud(state, 0);
   });
 
-  initFirebase();
+  // Start cloud auth only after local data are loaded, so an empty first render
+  // cannot overwrite data that already exist in Firebase.
+  initializeStateStorage({ normalizeState, initialState: INITIAL_STATE })
+    .then((result) => {
+      state = normalizeState(result.state);
+      storageReady = true;
+      renderAll();
+      if (result.migrated) {
+        window.showToast('Данные перенесены в защищённое локальное хранилище. Старая копия сохранена.', '💾');
+      }
+    })
+    .catch((err) => {
+      console.warn('IndexedDB is unavailable:', err);
+      window.showToast('Браузер не дал доступ к локальному хранилищу. Проверь настройки сайта.', '⚠️');
+    })
+    .finally(() => initFirebase());
 });
 
 renderAll();
