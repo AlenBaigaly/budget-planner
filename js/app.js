@@ -638,6 +638,149 @@ window.deleteActiveCard = function() {
 };
 
 // -------------------------------------------------------------
+// ACCOUNTS & BCC DEPOSITS — available inside the AQSHA workspace
+// -------------------------------------------------------------
+function nowForTransaction() {
+  const now = new Date();
+  return {
+    date: now.toISOString().split('T')[0],
+    time: now.toTimeString().slice(0, 5),
+    createdAt: now.toISOString()
+  };
+}
+
+function accountLabel(account) {
+  return `${account.icon || '💳'} ${account.name}`;
+}
+
+window.openAccountsManager = function() {
+  renderAccountsManager();
+  document.getElementById('modal-accounts').classList.remove('hidden');
+};
+
+function renderAccountsManager() {
+  const container = document.getElementById('accounts-manager-list');
+  if (!container) return;
+  const balances = getAccountBalances();
+  container.innerHTML = state.accounts.map((account) => {
+    const deposit = account.type === 'deposit';
+    const typeLabel = deposit ? `Вклад BCC ${account.subType === 'champion' ? '«Чемпион»' : '«Моя цель»'}` : ({ card: 'Банковская карта', cash: 'Наличные', savings: 'Накопительный счёт' }[account.type] || 'Счёт');
+    return `<div class="bg-white border border-[#E6E0D4] rounded-2xl p-3 flex items-center justify-between gap-3">
+      <div class="min-w-0"><div class="font-bold text-sm text-[#171717] truncate">${accountLabel(account)}</div><div class="text-[11px] text-[#7E7B73]">${typeLabel} · ₸${formatMoney(balances[account.id] || 0)}</div></div>
+      <div class="flex gap-2 shrink-0">${deposit ? `<button onclick="openDepositClose('${account.id}')" class="px-2 py-1.5 rounded-lg bg-[#EAE6DC] text-[10px] font-bold">Закрыть</button>` : `<button onclick="openAccountEditor('${account.id}')" class="px-2 py-1.5 rounded-lg bg-[#EAE6DC] text-[10px] font-bold">Настроить</button>`}<button onclick="deleteManagedAccount('${account.id}')" class="px-2 py-1.5 rounded-lg bg-red-50 text-red-700 text-[10px] font-bold">Удалить</button></div>
+    </div>`;
+  }).join('') || '<div class="text-center py-8 text-xs text-[#7E7B73]">Счетов пока нет</div>';
+}
+
+window.openAccountEditor = function(accountId = '') {
+  const account = accountId ? state.accounts.find((item) => item.id === accountId) : null;
+  if (account?.type === 'deposit') return;
+  document.getElementById('account-editor-title').innerText = account ? 'Настройки счёта' : 'Новый счёт';
+  document.getElementById('account-edit-id').value = account?.id || '';
+  document.getElementById('account-edit-name').value = account?.name || '';
+  document.getElementById('account-edit-type').value = account?.type || 'card';
+  document.getElementById('account-edit-icon').value = account?.icon || '💳';
+  document.getElementById('account-edit-balance').value = account?.initialBalance ?? 0;
+  document.getElementById('account-edit-exclude').checked = Boolean(account?.excludeFromTotal);
+  document.getElementById('modal-account-editor').classList.remove('hidden');
+};
+
+window.handleAccountSave = function(event) {
+  event.preventDefault();
+  const id = document.getElementById('account-edit-id').value;
+  const name = document.getElementById('account-edit-name').value.trim();
+  const type = document.getElementById('account-edit-type').value;
+  const icon = document.getElementById('account-edit-icon').value.trim() || '💳';
+  const initialBalance = Number(document.getElementById('account-edit-balance').value) || 0;
+  const excludeFromTotal = document.getElementById('account-edit-exclude').checked;
+  if (!name) return;
+  if (id) {
+    state.accounts = state.accounts.map((account) => account.id === id ? { ...account, name, type, icon, initialBalance, excludeFromTotal } : account);
+  } else {
+    state.accounts.push({ id: `acc_${Date.now()}`, name, type, icon, currency: '₸', initialBalance, excludeFromTotal });
+  }
+  saveState(); renderAll(); renderAccountsManager(); window.closeModal('modal-account-editor');
+  window.showToast(id ? 'Счёт изменён' : 'Счёт создан', '✓');
+};
+
+window.deleteManagedAccount = function(accountId) {
+  const account = state.accounts.find((item) => item.id === accountId);
+  if (!account || !confirm(`Удалить «${account.name}»? Операции останутся в журнале, но счёт в них будет отмечен как удалённый.`)) return;
+  state.accounts = state.accounts.filter((item) => item.id !== accountId);
+  state.goals = (state.goals || []).map((goal) => ({ ...goal, linkedAccounts: (goal.linkedAccounts || []).filter((id) => id !== accountId) }));
+  saveState(); renderAll(); renderAccountsManager();
+  window.showToast(`«${account.name}» удалён`, '🗑️');
+};
+
+function getDepositConfig(subType) {
+  return subType === 'champion' ? BCC_DEPOSIT_TYPES.CHAMPION : BCC_DEPOSIT_TYPES.MY_GOAL;
+}
+
+window.updateDepositTerms = function() {
+  const config = getDepositConfig(document.getElementById('deposit-type').value);
+  document.getElementById('deposit-term').value = config.defaultTermMonths;
+};
+
+window.openDepositEditor = function() {
+  const source = document.getElementById('deposit-source');
+  const eligible = state.accounts.filter((account) => account.type !== 'deposit');
+  source.innerHTML = eligible.map((account) => `<option value="${account.id}">${accountLabel(account)}</option>`).join('');
+  if (!eligible.length) { window.showToast('Сначала создай обычный счёт, с которого перевести деньги', '⚠️'); return; }
+  document.getElementById('deposit-name').value = 'Новый вклад BCC';
+  document.getElementById('deposit-type').value = 'my_goal';
+  window.updateDepositTerms();
+  document.getElementById('deposit-amount').value = '';
+  document.getElementById('modal-deposit-editor').classList.remove('hidden');
+};
+
+window.handleDepositSave = function(event) {
+  event.preventDefault();
+  const sourceId = document.getElementById('deposit-source').value;
+  const source = state.accounts.find((account) => account.id === sourceId);
+  const amount = Number(document.getElementById('deposit-amount').value);
+  const subType = document.getElementById('deposit-type').value;
+  const config = getDepositConfig(subType);
+  const termMonths = Number(document.getElementById('deposit-term').value) || config.defaultTermMonths;
+  const name = document.getElementById('deposit-name').value.trim();
+  if (!source || !name || amount <= 0) return;
+  const balances = getAccountBalances();
+  if ((balances[sourceId] || 0) < amount && !confirm('На выбранном счёте сейчас меньше этой суммы. Всё равно создать перевод?')) return;
+  const id = `acc_deposit_${Date.now()}`;
+  const startDate = nowForTransaction().date;
+  state.accounts.push({ id, name, type: 'deposit', subType, currency: '₸', icon: subType === 'champion' ? '🏆' : '🏦', initialBalance: 0, nominalRate: config.defaultNominalRate, effectiveRate: config.defaultEffectiveRate, termMonths, startDate, endDate: calculateMaturityDate(startDate, termMonths).toISOString().split('T')[0] });
+  state.transactions.unshift({ id: `tx_${Date.now()}`, type: 'transfer', amount, accountId: sourceId, toAccountId: id, categoryId: '', note: `Открытие вклада «${name}»`, ...nowForTransaction() });
+  saveState(); renderAll(); renderAccountsManager(); window.closeModal('modal-deposit-editor');
+  window.showToast('Вклад открыт, деньги переведены с выбранного счёта', '🏦');
+};
+
+window.openDepositClose = function(depositId) {
+  const deposit = state.accounts.find((account) => account.id === depositId);
+  if (!deposit) return;
+  const balances = getAccountBalances();
+  const targets = state.accounts.filter((account) => account.id !== depositId && account.type !== 'deposit');
+  if (!targets.length) { window.showToast('Нужен обычный счёт, куда вернуть деньги', '⚠️'); return; }
+  document.getElementById('close-deposit-id').value = depositId;
+  document.getElementById('close-deposit-summary').innerText = `На вкладе «${deposit.name}»: ₸${formatMoney(balances[depositId] || 0)}. Выбери счёт для возврата.`;
+  document.getElementById('close-deposit-target').innerHTML = targets.map((account) => `<option value="${account.id}">${accountLabel(account)}</option>`).join('');
+  document.getElementById('modal-close-deposit').classList.remove('hidden');
+};
+
+window.handleDepositClose = function(event) {
+  event.preventDefault();
+  const depositId = document.getElementById('close-deposit-id').value;
+  const targetId = document.getElementById('close-deposit-target').value;
+  const deposit = state.accounts.find((account) => account.id === depositId);
+  const target = state.accounts.find((account) => account.id === targetId);
+  if (!deposit || !target) return;
+  const amount = Math.max(0, getAccountBalances()[depositId] || 0);
+  if (amount > 0) state.transactions.unshift({ id: `tx_${Date.now()}`, type: 'transfer', amount, accountId: depositId, toAccountId: targetId, categoryId: '', note: `Закрытие вклада «${deposit.name}»`, ...nowForTransaction() });
+  state.accounts = state.accounts.filter((account) => account.id !== depositId);
+  state.goals = (state.goals || []).map((goal) => ({ ...goal, linkedAccounts: (goal.linkedAccounts || []).filter((id) => id !== depositId) }));
+  saveState(); renderAll(); renderAccountsManager(); window.closeModal('modal-close-deposit');
+  window.showToast(`Вклад закрыт: ₸${formatMoney(amount)} переведены на «${target.name}»`, '✓');
+};
+
+// -------------------------------------------------------------
 // RENDERERS: CAPITAL WORKSPACE
 // -------------------------------------------------------------
 function renderCapitalWorkspace() {
@@ -646,7 +789,7 @@ function renderCapitalWorkspace() {
   // Total available capital
   let totalAvailable = 0;
   state.accounts.forEach(acc => {
-    if (!acc.isCreditLimit) {
+    if (!acc.isCreditLimit && !acc.excludeFromTotal) {
       totalAvailable += (balances[acc.id] || 0);
     }
   });
@@ -671,7 +814,7 @@ function renderCapitalWorkspace() {
 
   const goalAcc = state.accounts.find(a => a.id === 'acc_bcc_goal');
   if (goalAcc) {
-    const est = calculateMonthlyInterestAccrual(balances['acc_bcc_goal'] || 0, goalAcc.nominalRate || 16.7);
+    const est = calculateMonthlyInterestAccrual(goalAcc.nominalRate || 16.7, balances['acc_bcc_goal'] || 0);
     const elInterest = document.getElementById('deposit-interest-calc');
     if (elInterest) elInterest.innerText = `+ ₸${formatMoney(est)} / мес`;
   }
@@ -942,7 +1085,7 @@ window.renderOperationsFeed = function() {
           </div>
           <div class="text-right">
             <div class="text-sm font-bold ${amountColor}">${sign}₸${formatMoney(tx.amount)}</div>
-            <button onclick="deleteTransaction('${tx.id}')" class="text-[10px] text-neutral-400 hover:text-red-600 transition">Удалить</button>
+            <div class="flex justify-end gap-2 mt-1"><button onclick="editTransaction('${tx.id}')" class="text-[10px] text-[#465948] hover:text-black transition">Изменить</button><button onclick="deleteTransaction('${tx.id}')" class="text-[10px] text-neutral-400 hover:text-red-600 transition">Удалить</button></div>
           </div>
         </div>
       `;
@@ -1103,9 +1246,15 @@ let currentModalTxType = 'expense';
 
 window.openModal = function(modalType, subType = 'expense', preselectedAcc = null) {
   if (modalType === 'tx') {
+    const form = document.querySelector('#modal-tx form');
+    if (form) form.reset();
+    document.getElementById('input-tx-id').value = '';
     window.setModalTxType(subType);
     populateSelectAccounts(preselectedAcc);
     populateSelectCategories();
+    const now = new Date();
+    document.getElementById('input-tx-date').value = now.toISOString().split('T')[0];
+    document.getElementById('input-tx-time').value = now.toTimeString().slice(0, 5);
     document.getElementById('modal-tx').classList.remove('hidden');
     document.getElementById('input-tx-amount').focus();
   } else if (modalType === 'rec') {
@@ -1219,28 +1368,51 @@ window.handleFormTransaction = function(e) {
   const accountId = document.getElementById('input-tx-account').value;
   const toAccountId = document.getElementById('input-tx-to-account').value;
   const categoryId = document.getElementById('input-tx-category').value;
+  const existingId = document.getElementById('input-tx-id').value;
+  const date = document.getElementById('input-tx-date').value;
+  const time = document.getElementById('input-tx-time').value;
 
   if (!amount || !note) return;
 
+  const existing = existingId ? state.transactions.find((tx) => tx.id === existingId) : null;
   const newTx = {
-    id: 'tx_' + Date.now(),
+    id: existingId || 'tx_' + Date.now(),
     type: currentModalTxType,
     amount: amount,
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    date: date,
+    time: time,
     accountId: accountId,
     toAccountId: currentModalTxType === 'transfer' ? toAccountId : '',
     categoryId: currentModalTxType !== 'transfer' ? categoryId : '',
-    note: note
+    note: note,
+    createdAt: existing?.createdAt || new Date().toISOString()
   };
 
-  state.transactions.unshift(newTx);
+  if (existing) state.transactions = state.transactions.map((tx) => tx.id === existingId ? newTx : tx);
+  else state.transactions.unshift(newTx);
   saveState();
 
   e.target.reset();
   window.closeModal('modal-tx');
   renderAll();
-  window.showToast(`Операция на ₸${formatMoney(amount)} записана!`);
+  window.showToast(existing ? 'Операция изменена' : `Операция на ₸${formatMoney(amount)} записана!`);
+};
+
+window.editTransaction = function(txId) {
+  const tx = state.transactions.find((item) => item.id === txId);
+  if (!tx) return;
+  currentModalTxType = tx.type;
+  populateSelectAccounts(tx.accountId);
+  window.setModalTxType(tx.type);
+  document.getElementById('input-tx-id').value = tx.id;
+  document.getElementById('input-tx-amount').value = tx.amount;
+  document.getElementById('input-tx-note').value = tx.note || '';
+  document.getElementById('input-tx-date').value = tx.date || new Date().toISOString().split('T')[0];
+  document.getElementById('input-tx-time').value = (tx.time || '00:00').slice(0, 5);
+  document.getElementById('input-tx-account').value = tx.accountId || '';
+  if (tx.type === 'transfer') document.getElementById('input-tx-to-account').value = tx.toAccountId || '';
+  else document.getElementById('input-tx-category').value = tx.categoryId || '';
+  document.getElementById('modal-tx').classList.remove('hidden');
 };
 
 window.deleteTransaction = function(txId) {
