@@ -301,9 +301,6 @@
         </div>
 
         <div class="flex items-center gap-2.5">
-          <button onclick="openAccountsManager()" class="text-xs font-semibold px-4 py-2 bg-[#EAE6DC] hover:bg-[#E1DCD0] text-[#171717] rounded-full transition">
-            Счета и вклады
-          </button>
           <button onclick="openModal('tx', 'transfer')" class="text-xs font-semibold px-4 py-2 bg-[#EAE6DC] hover:bg-[#E1DCD0] text-[#171717] rounded-full transition flex items-center gap-1.5">
             <span>⇄</span> Перевод
           </button>
@@ -885,7 +882,6 @@
       </div>
 
       <form onsubmit="handleFormTransaction(event)" class="space-y-4">
-        <input type="hidden" id="input-tx-id">
         <div class="grid grid-cols-3 gap-1 bg-[#EAE6DC] p-1 rounded-xl text-xs font-semibold">
           <button type="button" onclick="setModalTxType('expense')" id="modal-type-expense" class="py-1.5 rounded-lg bg-white text-[#171717] shadow-xs">Расход</button>
           <button type="button" onclick="setModalTxType('income')" id="modal-type-income" class="py-1.5 rounded-lg text-[#666]">Доход</button>
@@ -903,17 +899,6 @@
         <div>
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Заметка / Место</label>
           <input type="text" id="input-tx-note" required placeholder="Например: Magnum, Wolt, Зарплата" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-xs text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Дата операции</label>
-            <input type="date" id="input-tx-date" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Время</label>
-            <input type="time" id="input-tx-time" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
-          </div>
         </div>
 
         <div id="modal-tx-account-row">
@@ -941,52 +926,6 @@
         </div>
       </form>
     </div>
-  </div>
-
-  <!-- MODAL: ACCOUNTS & BCC DEPOSITS -->
-  <div id="modal-accounts" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl relative animate-scaleUp">
-      <div class="flex justify-between items-center mb-4">
-        <div><h3 class="font-bold text-base text-[#171717]">Счета и вклады</h3><p class="text-[11px] text-[#7E7B73] mt-1">Управляй счетами и вкладами прямо в AQSHA.</p></div>
-        <button onclick="closeModal('modal-accounts')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs">✕</button>
-      </div>
-      <div class="flex gap-2 mb-4">
-        <button onclick="openAccountEditor()" class="px-3 py-2 bg-[#171717] text-white text-xs font-semibold rounded-xl">+ Счёт</button>
-        <button onclick="openDepositEditor()" class="px-3 py-2 bg-[#465948] text-white text-xs font-semibold rounded-xl">+ Вклад BCC</button>
-      </div>
-      <div id="accounts-manager-list" class="space-y-2"></div>
-    </div>
-  </div>
-
-  <div id="modal-account-editor" class="fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl">
-      <div class="flex justify-between items-center mb-4"><h3 id="account-editor-title" class="font-bold text-base text-[#171717]">Новый счёт</h3><button onclick="closeModal('modal-account-editor')" class="w-8 h-8 rounded-full bg-[#EAE6DC]">✕</button></div>
-      <form onsubmit="handleAccountSave(event)" class="space-y-3 text-xs">
-        <input type="hidden" id="account-edit-id">
-        <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Название</label><input id="account-edit-name" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div>
-        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Тип</label><select id="account-edit-type" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"><option value="card">Банковская карта</option><option value="cash">Наличные</option><option value="savings">Накопительный счёт</option></select></div><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Иконка</label><input id="account-edit-icon" value="💳" maxlength="4" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-center"></div></div>
-        <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Начальный баланс (₸)</label><input id="account-edit-balance" type="number" min="0" required value="0" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div>
-        <label class="flex items-center gap-2 text-[#555]"><input id="account-edit-exclude" type="checkbox"> Не учитывать в общем капитале</label>
-        <button class="w-full py-3 bg-[#171717] text-white text-xs font-semibold rounded-full">Сохранить счёт</button>
-      </form>
-    </div>
-  </div>
-
-  <div id="modal-deposit-editor" class="fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl">
-      <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-base text-[#171717]">Открыть вклад BCC</h3><button onclick="closeModal('modal-deposit-editor')" class="w-8 h-8 rounded-full bg-[#EAE6DC]">✕</button></div>
-      <form onsubmit="handleDepositSave(event)" class="space-y-3 text-xs">
-        <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Название вклада</label><input id="deposit-name" required value="Новый вклад" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div>
-        <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Тип BCC</label><select id="deposit-type" onchange="updateDepositTerms()" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"><option value="my_goal">«Моя цель»</option><option value="champion">«Чемпион»</option></select></div>
-        <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт списания</label><select id="deposit-source" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></select></div>
-        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма (₸)</label><input id="deposit-amount" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Срок, мес.</label><input id="deposit-term" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div></div>
-        <button class="w-full py-3 bg-[#465948] text-white text-xs font-semibold rounded-full">Открыть и перевести деньги</button>
-      </form>
-    </div>
-  </div>
-
-  <div id="modal-close-deposit" class="fixed inset-0 z-[70] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl"><div class="flex justify-between items-center mb-3"><h3 class="font-bold text-base text-[#171717]">Закрыть вклад</h3><button onclick="closeModal('modal-close-deposit')" class="w-8 h-8 rounded-full bg-[#EAE6DC]">✕</button></div><p id="close-deposit-summary" class="text-xs text-[#7E7B73] mb-4"></p><form onsubmit="handleDepositClose(event)" class="space-y-3 text-xs"><input type="hidden" id="close-deposit-id"><select id="close-deposit-target" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></select><button class="w-full py-3 bg-[#171717] text-white text-xs font-semibold rounded-full">Закрыть и перевести</button></form></div>
   </div>
 
 
