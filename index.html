@@ -217,11 +217,21 @@
           <span class="text-base">💳</span>
           <div class="text-left">
             <div class="leading-tight">Капитал & Счета</div>
-            <div class="text-[10px] text-neutral-400 font-normal">Карты, депозиты, сводка</div>
+            <div class="text-[10px] text-neutral-400 font-normal">Карты, наличные, сводка</div>
           </div>
         </button>
 
-        <!-- 2. Журнал & Календарь -->
+        <!-- 2. Депозиты & Вклады -->
+        <button onclick="switchScreen('deposits')" id="nav-deposits" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[#6B6860] hover:text-[#171717] hover:bg-[#EAE6DB] transition-all">
+          <span class="text-base">🏦</span>
+          <div class="text-left">
+            <div class="leading-tight">Депозиты & Вклады</div>
+            <div class="text-[10px] text-neutral-400 font-normal">Открытие, снятие, %</div>
+          </div>
+          <span class="ml-auto text-[10px] bg-[#E3DFD4] text-[#465948] px-2 py-0.5 rounded-full font-bold" id="sidebar-deposit-count">2</span>
+        </button>
+
+        <!-- 3. Журнал & Календарь -->
         <button onclick="switchScreen('operations')" id="nav-operations" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[#6B6860] hover:text-[#171717] hover:bg-[#EAE6DB] transition-all">
           <span class="text-base">🧾</span>
           <div class="text-left">
@@ -365,80 +375,51 @@
           </div>
         </div>
 
-        <!-- 1B. АККУРАТНЫЕ КАРТОЧКИ: ДЕПОЗИТЫ BCC И НАЛИЧНЫЕ -->
+        <!-- 1B. ДЕПОЗИТЫ И НАЛИЧНЫЕ (ДИНАМИЧЕСКИЙ БЛОК) -->
         <div class="lg:col-span-6 flex flex-col justify-between gap-4">
 
-          <!-- Депозит BCC «Моя цель» с функцией зачисления процентов -->
-          <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs relative overflow-hidden">
-            <div class="flex justify-between items-start mb-2">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="px-2 py-0.5 bg-[#194C38] text-white text-[10px] font-bold rounded-md">BCC</span>
-                  <h3 class="font-bold text-base text-[#171717]">Депозит «Моя цель»</h3>
-                </div>
-                <p class="text-xs text-[#7E7B73] mt-0.5">Банк ЦентрКредит • 3 месяца без частичного снятия</p>
-              </div>
-              <span class="text-xs font-black text-[#194C38] bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                18.06% ГЭСВ
-              </span>
+          <!-- Header row -->
+          <div class="flex items-center justify-between pb-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-[#171717] uppercase tracking-wider">Депозиты & Вклады</span>
+              <span id="capital-deposits-summary-badge" class="text-[10px] bg-[#EAE6DC] text-[#465948] font-bold px-2 py-0.5 rounded-full">2 активных</span>
             </div>
-
-            <div class="my-3 py-3 border-y border-[#ECE7DC] flex justify-between items-end">
-              <div>
-                <div class="text-[11px] text-[#7E7B73] font-medium">Баланс вклада</div>
-                <div class="text-3xl font-extrabold text-[#171717] tracking-tight" id="deposit-val-goal">₸300 000</div>
-              </div>
-              <div class="text-right">
-                <div class="text-[11px] text-[#7E7B73] font-medium">Доходность за месяц</div>
-                <div class="text-sm font-bold text-emerald-700" id="deposit-interest-calc">+ ₸4 175 / мес</div>
-              </div>
-            </div>
-
-            <div class="flex justify-between items-center text-xs text-[#7E7B73]">
-              <span>Срок: 3 мес. (договор активен)</span>
-              <button onclick="triggerAccrueInterest('acc_bcc_goal')" class="px-3.5 py-1.5 bg-[#465948] hover:bg-[#38483a] text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs active:scale-95">
-                <span>💰</span> Зачислить %
+            <div class="flex items-center gap-2 text-xs">
+              <button onclick="openDepositModal()" class="font-bold text-[#465948] hover:underline flex items-center gap-1">
+                <span>+</span> Открыть вклад
+              </button>
+              <span class="text-neutral-300">|</span>
+              <button onclick="switchScreen('deposits')" class="font-semibold text-[#7E7B73] hover:text-[#171717] transition flex items-center gap-0.5">
+                Все вклады →
               </button>
             </div>
           </div>
 
-          <!-- Депозит BCC «Чемпион» & Наличные -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Dynamic container for deposits on capital screen -->
+          <div id="capital-deposits-container" class="space-y-3">
+            <!-- Dynamically populated by renderCapitalDeposits() -->
+          </div>
 
-            <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+          <!-- Наличные карточка -->
+          <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-5 shadow-xs flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-[#EAE6DC] text-xl flex items-center justify-center shrink-0">💵</div>
               <div>
-                <div class="flex justify-between items-start mb-1">
-                  <span class="text-xs font-bold text-[#171717]">🏆 BCC «Чемпион»</span>
-                  <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">15.17%</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-[#171717]">Наличные деньги</span>
+                  <span class="text-[10px] bg-[#EAE6DC] px-2 py-0.5 rounded-full font-semibold">Кошелёк & Сейф</span>
                 </div>
-                <p class="text-[10px] text-[#7E7B73]">Свободное снятие от 1 000 ₸</p>
-                <div class="text-2xl font-black text-[#171717] mt-2" id="deposit-val-champ">₸500 000</div>
-              </div>
-              <div class="mt-3 pt-2 border-t border-[#ECE7DC] flex justify-between items-center text-xs">
-                <span class="text-[10px] text-[#7E7B73]">6 месяцев</span>
-                <button onclick="triggerAccrueInterest('acc_bcc_champ')" class="text-[11px] font-bold text-[#465948] hover:underline">
-                  + Начислить %
-                </button>
+                <div class="text-2xl font-black text-[#171717] mt-0.5" id="val-cash">₸45 000</div>
               </div>
             </div>
-
-            <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-5 shadow-xs flex flex-col justify-between">
-              <div>
-                <div class="flex justify-between items-start mb-1">
-                  <span class="text-xs font-bold text-[#171717]">💵 Наличные</span>
-                  <span class="text-[10px] bg-[#EAE6DC] px-2 py-0.5 rounded-full font-semibold">₸ KZT</span>
-                </div>
-                <p class="text-[10px] text-[#7E7B73]">Кошелёк и сейф</p>
-                <div class="text-2xl font-black text-[#171717] mt-2" id="val-cash">₸45 000</div>
-              </div>
-              <div class="mt-3 pt-2 border-t border-[#ECE7DC] flex justify-between items-center text-xs">
-                <span class="text-[10px] text-[#7E7B73]">Сверено</span>
-                <button onclick="openModal('tx', 'expense', 'acc_cash')" class="text-[11px] font-bold text-[#465948] hover:underline">
-                  - Расход
-                </button>
-              </div>
+            <div class="flex items-center gap-2">
+              <button onclick="openModal('tx', 'expense', 'acc_cash')" class="px-3.5 py-1.5 bg-white border border-[#DFDAD0] hover:bg-[#EAE6DC] text-[11px] font-bold text-[#171717] rounded-xl transition shadow-2xs">
+                - Расход
+              </button>
+              <button onclick="openModal('tx', 'income', 'acc_cash')" class="px-3.5 py-1.5 bg-[#465948] hover:bg-[#38483a] text-[11px] font-bold text-white rounded-xl transition shadow-2xs">
+                + Доход
+              </button>
             </div>
-
           </div>
 
         </div>
@@ -555,7 +536,159 @@
 
 
     <!-- ============================================================ -->
-    <!-- SCREEN 2: ЖУРНАЛ ОПЕРАЦИЙ & КАЛЕНДАРЬ ПЛАТЕЖЕЙ              -->
+    <!-- SCREEN 2: ДЕПОЗИТЫ & ВКЛАДЫ (УПРАВЛЕНИЕ, КАПИТАЛИЗАЦИЯ, %)    -->
+    <!-- ============================================================ -->
+    <section id="workspace-deposits" class="workspace-pane hidden p-5 sm:p-8 lg:p-10 max-w-6xl mx-auto w-full space-y-8 animate-fadeIn">
+
+      <!-- Header Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E8E4DA] pb-5">
+        <div>
+          <div class="text-[11px] uppercase tracking-widest text-[#7E7B73] font-bold mb-1">Управление сбережениями & Пассивный доход</div>
+          <h1 class="font-editorial text-4xl sm:text-5xl text-[#171717]">
+            Мои <span class="text-[#465948] italic">депозиты.</span>
+          </h1>
+          <p class="text-xs text-[#7E7B73] mt-1">Открытие, пополнение, снятие, начисление капитализации и закрытие вкладов</p>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <button onclick="openDepositModal()" class="px-5 py-2.5 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-2xl shadow-sm transition active:scale-95 flex items-center gap-2">
+            <span>+</span> Открыть вклад
+          </button>
+        </div>
+      </div>
+
+      <!-- Portfolio Summary 3-Metrics Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- 1. Total on Deposits -->
+        <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs">
+          <div class="text-[11px] uppercase font-bold tracking-wider text-[#7E7B73] mb-1">Всего на депозитах</div>
+          <div class="text-3xl font-extrabold text-[#171717] tracking-tight" id="dep-stat-total">₸0</div>
+          <div class="text-[11px] text-[#7E7B73] mt-2 flex items-center gap-1.5">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="dep-stat-count">0 активных договоров</span>
+          </div>
+        </div>
+
+        <!-- 2. Monthly Passive Income -->
+        <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs">
+          <div class="text-[11px] uppercase font-bold tracking-wider text-[#7E7B73] mb-1">Прогноз дохода / месяц</div>
+          <div class="text-3xl font-extrabold text-emerald-800 tracking-tight" id="dep-stat-monthly">+₸0</div>
+          <div class="text-[11px] text-[#7E7B73] mt-2">Капитализация по всем вкладам</div>
+        </div>
+
+        <!-- 3. Weighted Average Rate -->
+        <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 shadow-xs">
+          <div class="text-[11px] uppercase font-bold tracking-wider text-[#7E7B73] mb-1">Средневзвешенная ставка</div>
+          <div class="text-3xl font-extrabold text-[#465948] tracking-tight" id="dep-stat-avg-rate">0.0%</div>
+          <div class="text-[11px] text-[#7E7B73] mt-2">Эффективная доходность ГЭСВ</div>
+        </div>
+      </div>
+
+      <!-- Popular Bank Presets Quick Bar -->
+      <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-5 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-[#171717]">Открыть готовый вклад в банках Казахстана:</div>
+          <span class="text-[11px] text-[#7E7B73]">1 клик для предзаполнения условий</span>
+        </div>
+          <div class="flex flex-wrap gap-2">
+          <button onclick="openDepositModal('bcc_goal')" class="px-3.5 py-2 bg-white border border-[#DFDAD0] hover:border-[#194C38] hover:bg-emerald-50/50 rounded-xl text-xs font-semibold text-[#171717] transition flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-[#194C38]"></span>
+            <span>BCC «Моя цель» <b>18.06%</b></span>
+          </button>
+          <button onclick="openDepositModal('bcc_champ')" class="px-3.5 py-2 bg-white border border-[#DFDAD0] hover:border-[#194C38] hover:bg-emerald-50/50 rounded-xl text-xs font-semibold text-[#171717] transition flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-[#194C38]"></span>
+            <span>BCC «Чемпион» <b>15.17%</b></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Deposits Section -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-[#171717] uppercase tracking-wider">Действующие договоры вкладов</h2>
+          <span class="text-xs text-[#7E7B73]">Ежемесячная капитализация</span>
+        </div>
+        <div id="deposits-cards-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Dynamically populated by renderDepositWorkspace() -->
+        </div>
+      </div>
+
+      <!-- Interactive Calculator & Compound Interest -->
+      <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+        <div class="border-b border-[#ECE7DC] pb-4">
+          <div class="text-[11px] uppercase tracking-widest text-[#7E7B73] font-bold">Умный калькулятор</div>
+          <h2 class="font-editorial text-3xl text-[#171717] mt-0.5">Расчёт доходности и сложного процента</h2>
+          <p class="text-xs text-[#7E7B73] mt-1">Смоделируйте накопления с учётом ежемесячной капитализации и регулярных пополнений</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма вклада (₸)</label>
+            <input type="number" id="calc-input-amount" value="500000" step="10000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-base font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Срок вклада</label>
+            <select id="calc-input-term" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-[#171717] focus:outline-none">
+              <option value="3">3 месяца (BCC «Моя цель»)</option>
+              <option value="6" selected>6 месяцев</option>
+              <option value="12">12 месяцев (1 год)</option>
+              <option value="24">24 месяца (2 года)</option>
+              <option value="36">36 месяцев (3 года)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Ставка ГЭСВ (%)</label>
+            <input type="number" id="calc-input-rate" value="18.06" step="0.1" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-base font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Пополнение в месяц (₸)</label>
+            <input type="number" id="calc-input-topup" value="25000" step="5000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-base font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+          </div>
+        </div>
+
+        <!-- Calculator Result Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white border border-[#ECE7DC] rounded-2xl p-5">
+          <div>
+            <div class="text-[11px] text-[#7E7B73] font-medium">Итого к концу срока</div>
+            <div class="text-2xl font-black text-[#171717] mt-0.5" id="calc-res-final">₸0</div>
+            <div class="text-[10px] text-neutral-400 mt-1">Тело + пополнения + %</div>
+          </div>
+          <div>
+            <div class="text-[11px] text-[#7E7B73] font-medium">Чистый доход (% капитализации)</div>
+            <div class="text-2xl font-black text-emerald-700 mt-0.5" id="calc-res-profit">+₸0</div>
+            <div class="text-[10px] text-emerald-600 mt-1 font-semibold">Ваша пассивная прибыль</div>
+          </div>
+          <div class="flex flex-col justify-between">
+            <div>
+              <div class="text-[11px] text-[#7E7B73] font-medium">Средний доход в месяц</div>
+              <div class="text-xl font-bold text-[#465948] mt-0.5" id="calc-res-monthly">+₸0 / мес</div>
+            </div>
+            <button onclick="applyCalculatorToDepositModal()" class="mt-2 py-2 px-3 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-xl transition text-center shadow-xs">
+              Открыть этот вклад →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Closed / Archived Deposits Section -->
+      <div id="deposits-closed-section" class="hidden space-y-3 pt-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-[#7E7B73] uppercase tracking-wider">Архив закрытых вкладов</h3>
+          <span class="text-[11px] text-[#7E7B73]" id="dep-closed-count">0 закрытых</span>
+        </div>
+        <div id="deposits-closed-list" class="space-y-2">
+          <!-- Populated if closed deposits exist -->
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 3: ЖУРНАЛ ОПЕРАЦИЙ & КАЛЕНДАРЬ ПЛАТЕЖЕЙ              -->
     <!-- ============================================================ -->
     <section id="workspace-operations" class="workspace-pane hidden p-5 sm:p-8 lg:p-10 max-w-6xl mx-auto w-full space-y-7 animate-fadeIn">
 
@@ -739,20 +872,40 @@
 
   </div>
 
+  <!-- MODAL: OPEN BCC DEPOSIT -->
+  <div id="modal-deposit" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4"><div><h3 class="font-bold text-base text-[#171717]">Открыть вклад BCC</h3><p class="text-[11px] text-[#7E7B73] mt-1">Деньги будут переведены с выбранного счёта.</p></div><button onclick="closeModal('modal-deposit')" class="w-8 h-8 rounded-full bg-[#EAE6DC]">✕</button></div>
+      <form onsubmit="handleDepositForm(event)" class="space-y-3 text-xs">
+        <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Тип вклада</label><select id="deposit-input-preset" onchange="applyDepositPreset()" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"><option value="bcc_goal">BCC «Моя цель» — без снятия</option><option value="bcc_champ">BCC «Чемпион» — частичное снятие</option></select></div>
+        <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Название</label><input id="deposit-input-name" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div>
+        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма (₸)</label><input id="deposit-input-amount" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Срок, мес.</label><input id="deposit-input-term" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div></div>
+        <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт списания</label><select id="deposit-input-source" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></select></div>
+        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Номинальная ставка, %</label><input id="deposit-input-rate" type="number" step="0.1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">ГЭСВ, %</label><input id="deposit-input-effective-rate" type="number" step="0.1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div></div>
+        <button class="w-full py-3 bg-[#171717] text-white text-xs font-semibold rounded-full">Открыть вклад и перевести деньги</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: DEPOSIT MONEY ACTION -->
+  <div id="modal-deposit-action" class="fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl"><div class="flex justify-between items-center mb-3"><h3 id="deposit-action-title" class="font-bold text-base text-[#171717]">Операция по вкладу</h3><button onclick="closeModal('modal-deposit-action')" class="w-8 h-8 rounded-full bg-[#EAE6DC]">✕</button></div><p id="deposit-action-info" class="text-xs text-[#7E7B73] mb-4"></p><form onsubmit="handleDepositAction(event)" class="space-y-3 text-xs"><input type="hidden" id="deposit-action-kind"><input type="hidden" id="deposit-action-id"><div><label id="deposit-action-account-label" class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт</label><select id="deposit-action-account" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></select></div><div id="deposit-action-amount-row"><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма (₸)</label><input id="deposit-action-amount" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><button id="deposit-action-submit" class="w-full py-3 bg-[#465948] text-white text-xs font-semibold rounded-full">Подтвердить</button></form></div>
+  </div>
+
 
   <!-- ============================================================== -->
   <!-- MOBILE BOTTOM NAVIGATION                                       -->
   <!-- ============================================================== -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF9F5]/95 backdrop-blur-md border-t border-[#E8E4DA] px-6 py-2 flex justify-between items-center text-[10px]">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF9F5]/95 backdrop-blur-md border-t border-[#E8E4DA] px-4 py-2 flex justify-between items-center text-[10px]">
 
     <button onclick="switchScreen('capital')" id="mob-nav-capital" class="mob-nav-btn active flex flex-col items-center gap-1 text-[#171717]">
       <div class="icon-pill w-11 h-7 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center text-xs transition">💳</div>
       <span>Капитал</span>
     </button>
 
-    <button onclick="switchScreen('operations')" id="mob-nav-operations" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
-      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">🧾</div>
-      <span>Операции</span>
+    <button onclick="switchScreen('deposits')" id="mob-nav-deposits" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
+      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">🏦</div>
+      <span>Вклады</span>
     </button>
 
     <button onclick="openModal('tx', 'expense')" class="flex flex-col items-center -mt-5">
@@ -762,14 +915,14 @@
       <span class="text-[9px] font-bold text-[#171717] mt-1">Расход</span>
     </button>
 
-    <button onclick="switchScreen('plan')" id="mob-nav-plan" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
-      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">🎯</div>
-      <span>План & Цели</span>
+    <button onclick="switchScreen('operations')" id="mob-nav-operations" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
+      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">🧾</div>
+      <span>Журнал</span>
     </button>
 
-    <button onclick="openSettingsModal()" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
-      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">⚙️</div>
-      <span>Ещё</span>
+    <button onclick="switchScreen('plan')" id="mob-nav-plan" class="mob-nav-btn flex flex-col items-center gap-1 text-[#7E7B73]">
+      <div class="icon-pill w-11 h-7 rounded-full flex items-center justify-center text-xs transition">🎯</div>
+      <span>План</span>
     </button>
 
   </nav>
@@ -1131,7 +1284,7 @@
 
 
   <!-- SCRIPTS MODULE -->
-  <script type="module" src="./js/app.js?v=aqsha_canvas_v4"></script>
+  <script type="module" src="./js/app.js?v=aqsha_deposits_v1"></script>
 
 </body>
 </html>

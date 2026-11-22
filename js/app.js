@@ -8,7 +8,8 @@ import {
   calculateMaturityDate,
   getDaysRemaining,
   calculateDepositForecast,
-  calculateMonthlyInterestAccrual
+  calculateMonthlyInterestAccrual,
+  validateDepositWithdrawal
 } from './bcc-deposits.js';
 
 import {
@@ -326,6 +327,7 @@ function normalizeState(rawState) {
   normalized.recurring = Array.isArray(raw.recurring) ? raw.recurring : normalized.recurring;
   normalized.goals = Array.isArray(raw.goals) ? raw.goals : normalized.goals;
   normalized.limits = raw.limits || normalized.limits;
+  normalized.closedDeposits = Array.isArray(raw.closedDeposits) ? raw.closedDeposits : [];
 
   normalized.goals = normalized.goals.map((goal) => ({
     ...goal,
@@ -638,6 +640,164 @@ window.deleteActiveCard = function() {
 };
 
 // -------------------------------------------------------------
+// BCC DEPOSITS
+// -------------------------------------------------------------
+function depositPreset(key) {
+  return key === 'bcc_champ' ? BCC_DEPOSIT_TYPES.CHAMPION : BCC_DEPOSIT_TYPES.MY_GOAL;
+}
+
+function makeTimestamp() {
+  const now = new Date();
+  return { date: now.toISOString().split('T')[0], time: now.toTimeString().slice(0, 5), createdAt: now.toISOString() };
+}
+
+function depositAccounts() {
+  return state.accounts.filter((account) => account.type === 'deposit');
+}
+
+function accountOptions(accounts) {
+  return accounts.map((account) => `<option value="${account.id}">${account.icon || '💳'} ${account.name} — ₸${formatMoney(getAccountBalances()[account.id] || 0)}</option>`).join('');
+}
+
+window.applyDepositPreset = function() {
+  const preset = depositPreset(document.getElementById('deposit-input-preset').value);
+  document.getElementById('deposit-input-name').value = preset.name;
+  document.getElementById('deposit-input-term').value = preset.termMonths;
+  document.getElementById('deposit-input-rate').value = preset.nominalRate;
+  document.getElementById('deposit-input-effective-rate').value = preset.effectiveRate;
+};
+
+window.openDepositModal = function(presetKey = 'bcc_goal') {
+  const sourceAccounts = state.accounts.filter((account) => account.type !== 'deposit');
+  if (!sourceAccounts.length) {
+    window.showToast('Сначала добавь обычный счёт, с которого будут переведены деньги.', '⚠️');
+    return;
+  }
+  const key = presetKey === 'bcc_champ' ? 'bcc_champ' : 'bcc_goal';
+  document.getElementById('deposit-input-preset').value = key;
+  document.getElementById('deposit-input-source').innerHTML = accountOptions(sourceAccounts);
+  document.getElementById('deposit-input-amount').value = '';
+  window.applyDepositPreset();
+  document.getElementById('modal-deposit').classList.remove('hidden');
+};
+
+window.handleDepositForm = function(event) {
+  event.preventDefault();
+  const presetKey = document.getElementById('deposit-input-preset').value;
+  const preset = depositPreset(presetKey);
+  const amount = Number(document.getElementById('deposit-input-amount').value);
+  const sourceId = document.getElementById('deposit-input-source').value;
+  const source = state.accounts.find((account) => account.id === sourceId);
+  const name = document.getElementById('deposit-input-name').value.trim();
+  const termMonths = Number(document.getElementById('deposit-input-term').value);
+  if (!source || !name || amount <= 0 || termMonths <= 0) return;
+  if ((getAccountBalances()[sourceId] || 0) < amount && !confirm('На счёте сейчас меньше указанной суммы. Открыть вклад всё равно?')) return;
+  const timestamp = makeTimestamp();
+  const id = `acc_deposit_${Date.now()}`;
+  const account = {
+    id, name, type: 'deposit', isBCC: true, subType: presetKey === 'bcc_champ' ? 'champion' : 'my_goal', bank: 'bcc', currency: '₸', icon: preset.icon,
+    initialBalance: 0, nominalRate: Number(document.getElementById('deposit-input-rate').value) || preset.nominalRate,
+    effectiveRate: Number(document.getElementById('deposit-input-effective-rate').value) || preset.effectiveRate,
+    termMonths, startDate: timestamp.date, endDate: calculateMaturityDate(timestamp.date, termMonths).toISOString().split('T')[0],
+    allowsWithdrawal: preset.allowsWithdrawal, allowsReplenishment: preset.allowsReplenishment, minBalance: preset.minBalance || 0
+  };
+  state.accounts.push(account);
+  state.transactions.unshift({ id: `tx_${Date.now()}`, type: 'transfer', amount, accountId: sourceId, toAccountId: id, categoryId: '', note: `Открытие вклада «${name}»`, ...timestamp });
+  saveState(); renderAll(); window.closeModal('modal-deposit');
+  window.showToast(`Вклад «${name}» открыт`, '🏦');
+};
+
+window.openDepositAction = function(depositId, kind) {
+  const deposit = state.accounts.find((account) => account.id === depositId && account.type === 'deposit');
+  if (!deposit) return;
+  const balances = getAccountBalances();
+  const candidates = state.accounts.filter((account) => account.type !== 'deposit');
+  if (!candidates.length) { window.showToast('Нужен обычный счёт для перевода денег.', '⚠️'); return; }
+  if (kind === 'withdraw') {
+    const check = validateDepositWithdrawal(deposit, 1, balances[depositId] || 0);
+    if (!check.allowed) { window.showToast(check.reason, '⚠️'); return; }
+  }
+  const labels = { topup: ['Пополнить вклад', 'Счёт списания', 'Перевести на вклад'], withdraw: ['Снять с вклада', 'Счёт зачисления', 'Снять деньги'], close: ['Закрыть вклад', 'Счёт зачисления', 'Закрыть и перевести остаток'] };
+  const [title, accountLabel, submit] = labels[kind];
+  document.getElementById('deposit-action-kind').value = kind;
+  document.getElementById('deposit-action-id').value = depositId;
+  document.getElementById('deposit-action-title').innerText = title;
+  document.getElementById('deposit-action-account-label').innerText = accountLabel;
+  document.getElementById('deposit-action-submit').innerText = submit;
+  document.getElementById('deposit-action-account').innerHTML = accountOptions(candidates);
+  document.getElementById('deposit-action-info').innerText = `Вклад «${deposit.name}». Текущий остаток: ₸${formatMoney(balances[depositId] || 0)}.`;
+  const amount = document.getElementById('deposit-action-amount');
+  const amountRow = document.getElementById('deposit-action-amount-row');
+  amountRow.classList.toggle('hidden', kind === 'close');
+  amount.required = kind !== 'close';
+  amount.value = kind === 'close' ? String(Math.max(0, balances[depositId] || 0)) : '';
+  document.getElementById('modal-deposit-action').classList.remove('hidden');
+};
+
+window.handleDepositAction = function(event) {
+  event.preventDefault();
+  const kind = document.getElementById('deposit-action-kind').value;
+  const depositId = document.getElementById('deposit-action-id').value;
+  const otherAccountId = document.getElementById('deposit-action-account').value;
+  const deposit = state.accounts.find((account) => account.id === depositId && account.type === 'deposit');
+  const other = state.accounts.find((account) => account.id === otherAccountId);
+  const balance = getAccountBalances()[depositId] || 0;
+  const amount = kind === 'close' ? balance : Number(document.getElementById('deposit-action-amount').value);
+  if (!deposit || !other || amount <= 0) return;
+  if (kind === 'topup' && !deposit.allowsReplenishment) { window.showToast('Этот вклад нельзя пополнять по его условиям.', '⚠️'); return; }
+  if (kind === 'withdraw') {
+    const check = validateDepositWithdrawal(deposit, amount, balance);
+    if (!check.allowed) { window.showToast(check.reason, '⚠️'); return; }
+  }
+  const timestamp = makeTimestamp();
+  const fromId = kind === 'topup' ? otherAccountId : depositId;
+  const toId = kind === 'topup' ? depositId : otherAccountId;
+  const note = kind === 'topup' ? `Пополнение вклада «${deposit.name}»` : kind === 'close' ? `Закрытие вклада «${deposit.name}»` : `Снятие с вклада «${deposit.name}»`;
+  state.transactions.unshift({ id: `tx_${Date.now()}`, type: 'transfer', amount, accountId: fromId, toAccountId: toId, categoryId: '', note, ...timestamp });
+  if (kind === 'close') {
+    state.closedDeposits = [...(state.closedDeposits || []), { ...deposit, closedAt: timestamp.date, finalBalance: amount }];
+    state.accounts = state.accounts.filter((account) => account.id !== depositId);
+  }
+  saveState(); renderAll(); window.closeModal('modal-deposit-action');
+  window.showToast(kind === 'topup' ? 'Вклад пополнен' : kind === 'withdraw' ? 'Деньги переведены на счёт' : 'Вклад закрыт, деньги переведены', '✓');
+};
+
+function renderDeposits() {
+  const balances = getAccountBalances();
+  const deposits = depositAccounts();
+  const total = deposits.reduce((sum, item) => sum + Math.max(0, balances[item.id] || 0), 0);
+  const monthly = deposits.reduce((sum, item) => sum + calculateMonthlyInterestAccrual(balances[item.id] || 0, item.nominalRate || 0), 0);
+  const avgRate = total ? deposits.reduce((sum, item) => sum + (balances[item.id] || 0) * Number(item.effectiveRate || item.nominalRate || 0), 0) / total : 0;
+  const setText = (id, value) => { const el = document.getElementById(id); if (el) el.innerText = value; };
+  setText('sidebar-deposit-count', String(deposits.length));
+  setText('capital-deposits-summary-badge', `${deposits.length} активных`);
+  setText('dep-stat-total', `₸${formatMoney(total)}`); setText('dep-stat-count', `${deposits.length} активных договоров`);
+  setText('dep-stat-monthly', `+₸${formatMoney(monthly)}`); setText('dep-stat-avg-rate', `${avgRate.toFixed(2)}%`);
+  const card = (deposit, compact = false) => {
+    const balance = balances[deposit.id] || 0;
+    const days = getDaysRemaining(deposit.endDate || calculateMaturityDate(deposit.startDate, deposit.termMonths).toISOString().split('T')[0]);
+    const forecast = calculateDepositForecast({ principal: balance, nominalRate: deposit.nominalRate, termMonths: deposit.termMonths, startDate: deposit.startDate });
+    return `<article class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl p-${compact ? '4' : '6'} shadow-xs"><div class="flex justify-between gap-3"><div><div class="text-[10px] font-bold text-[#465948] uppercase">BCC ${deposit.subType === 'champion' ? '«Чемпион»' : '«Моя цель»'}</div><h3 class="font-bold ${compact ? 'text-sm' : 'text-lg'} text-[#171717] mt-1">${deposit.icon || '🏦'} ${deposit.name}</h3></div><div class="text-right"><div class="text-[10px] text-[#7E7B73]">Остаток</div><div class="font-black ${compact ? 'text-lg' : 'text-2xl'}">₸${formatMoney(balance)}</div></div></div>${compact ? '' : `<div class="grid grid-cols-3 gap-2 mt-4 text-[11px]"><div class="bg-white border border-[#ECE7DC] rounded-xl p-2.5"><span class="text-[#7E7B73]">ГЭСВ</span><b class="block mt-1">${deposit.effectiveRate || deposit.nominalRate}%</b></div><div class="bg-white border border-[#ECE7DC] rounded-xl p-2.5"><span class="text-[#7E7B73]">Доход / мес.</span><b class="block mt-1 text-emerald-700">+₸${formatMoney(calculateMonthlyInterestAccrual(balance, deposit.nominalRate || 0))}</b></div><div class="bg-white border border-[#ECE7DC] rounded-xl p-2.5"><span class="text-[#7E7B73]">Осталось</span><b class="block mt-1">${days > 0 ? `${days} дн.` : 'Срок истёк'}</b></div></div><div class="text-[11px] text-[#7E7B73] mt-3">Прогноз к концу срока: <b class="text-[#171717]">₸${formatMoney(forecast.finalAmount)}</b></div>`}<div class="flex flex-wrap gap-2 mt-4"><button onclick="openDepositAction('${deposit.id}','topup')" class="px-3 py-1.5 bg-[#465948] text-white text-[11px] font-bold rounded-xl">+ Пополнить</button><button onclick="openDepositAction('${deposit.id}','withdraw')" class="px-3 py-1.5 bg-white border border-[#DFDAD0] text-[11px] font-bold rounded-xl">Снять</button><button onclick="triggerAccrueInterest('${deposit.id}')" class="px-3 py-1.5 bg-[#EAE6DC] text-[11px] font-bold rounded-xl">Начислить %</button><button onclick="openDepositAction('${deposit.id}','close')" class="px-3 py-1.5 text-red-700 bg-red-50 text-[11px] font-bold rounded-xl">Закрыть</button></div></article>`;
+  };
+  const full = document.getElementById('deposits-cards-grid'); if (full) full.innerHTML = deposits.length ? deposits.map((item) => card(item)).join('') : '<div class="lg:col-span-2 py-10 text-center text-xs text-[#7E7B73]">Нет активных вкладов. Нажми «Открыть вклад».</div>';
+  const compact = document.getElementById('capital-deposits-container'); if (compact) compact.innerHTML = deposits.slice(0, 2).map((item) => card(item, true)).join('') || '<div class="text-xs text-[#7E7B73] py-4">Вкладов пока нет.</div>';
+  const closed = state.closedDeposits || []; const closedSection = document.getElementById('deposits-closed-section');
+  if (closedSection) { closedSection.classList.toggle('hidden', !closed.length); setText('dep-closed-count', `${closed.length} закрытых`); const closedList = document.getElementById('deposits-closed-list'); if (closedList) closedList.innerHTML = closed.map((item) => `<div class="bg-white border border-[#E8E4DA] rounded-xl px-4 py-3 text-xs flex justify-between"><span>${item.icon || '🏦'} ${item.name}</span><span class="text-[#7E7B73]">${item.closedAt} · ₸${formatMoney(item.finalBalance)}</span></div>`).join(''); }
+}
+
+function bindDepositCalculator() {
+  ['calc-input-amount', 'calc-input-term', 'calc-input-rate', 'calc-input-topup'].forEach((id) => document.getElementById(id)?.addEventListener('input', renderDepositCalculator));
+  renderDepositCalculator();
+}
+function renderDepositCalculator() {
+  const value = (id) => Number(document.getElementById(id)?.value) || 0;
+  const forecast = calculateDepositForecast({ principal: value('calc-input-amount'), termMonths: value('calc-input-term'), nominalRate: value('calc-input-rate'), monthlyTopUp: value('calc-input-topup') });
+  const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+  setText('calc-res-final', `₸${formatMoney(forecast.finalAmount)}`); setText('calc-res-profit', `+₸${formatMoney(forecast.totalReward)}`); setText('calc-res-monthly', `+₸${formatMoney(forecast.termMonths ? forecast.totalReward / forecast.termMonths : 0)} / мес`);
+}
+window.applyCalculatorToDepositModal = function() { window.openDepositModal(); document.getElementById('deposit-input-amount').value = document.getElementById('calc-input-amount').value; document.getElementById('deposit-input-term').value = document.getElementById('calc-input-term').value; document.getElementById('deposit-input-rate').value = document.getElementById('calc-input-rate').value; };
+
+// -------------------------------------------------------------
 // RENDERERS: CAPITAL WORKSPACE
 // -------------------------------------------------------------
 function renderCapitalWorkspace() {
@@ -801,7 +961,7 @@ window.filterTxType = function(type, btn) {
 };
 
 window.switchScreen = function(screen, focusId = null) {
-  const screens = ['capital', 'operations', 'plan'];
+  const screens = ['capital', 'deposits', 'operations', 'plan'];
   const selected = screens.includes(screen) ? screen : 'capital';
 
   screens.forEach((name) => {
@@ -1489,6 +1649,7 @@ function renderAll() {
   populateSelectAccounts();
   populateSelectCategories();
   renderCapitalWorkspace();
+  renderDeposits();
   renderOperationsFeed();
   renderRecurringPayments();
   renderPlanWorkspace();
@@ -1506,6 +1667,7 @@ if ('serviceWorker' in navigator) {
 
 document.addEventListener('DOMContentLoaded', () => {
   renderAll();
+  bindDepositCalculator();
 
   onAuthChanged((user) => {
     const button = document.getElementById('btn-google-auth');
