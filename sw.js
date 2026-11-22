@@ -1,15 +1,16 @@
-const CACHE_NAME = 'aqsha-budget-storage-v3';
+const CACHE_NAME = 'aqsha-budget-sync-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_storage_v3',
-  './js/storage.js',
+  './js/app.js?v=aqsha_sync_v4',
+  './js/storage.js?v=aqsha_sync_v4',
+  './js/state-sync.js?v=aqsha_sync_v4',
   './vendor/tesseract.esm.min.js',
   './vendor/tesseract-worker.min.js',
   './js/bcc-deposits.js',
   './js/analytics.js',
-  './js/firebase-config.js',
+  './js/firebase-config.js?v=aqsha_sync_v4',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'

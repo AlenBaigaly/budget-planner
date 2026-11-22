@@ -9,6 +9,7 @@ let firestoreDb = null;
 let currentUser = null;
 let authStateListeners = [];
 let syncListeners = [];
+let syncStatusListeners = [];
 
 const FIREBASE_CONFIG_KEY = 'gemini_budget_firebase_config';
 const FIREBASE_DISABLED_KEY = 'gemini_budget_firebase_disabled';
@@ -164,6 +165,14 @@ export function onCloudDataChanged(callback) {
   syncListeners.push(callback);
 }
 
+export function onSyncStatusChanged(callback) {
+  syncStatusListeners.push(callback);
+}
+
+function emitSyncStatus(status) {
+  syncStatusListeners.forEach((fn) => fn(status));
+}
+
 /**
  * Listens for changes in the cloud Firestore document
  */
@@ -179,18 +188,22 @@ export async function setupFirestoreRealtimeSync(userId) {
   unsubscribeCloudSync = onSnapshot(userDocRef, { includeMetadataChanges: true }, (snap) => {
     // CRITICAL: Ignore local uncommitted writes to prevent infinite feedback echo loops
     if (snap.metadata && snap.metadata.hasPendingWrites) {
+      emitSyncStatus('syncing');
       return;
     }
     if (snap.exists()) {
       const data = snap.data();
       syncListeners.forEach((fn) => fn({ type: 'remote-state', data }));
+      emitSyncStatus('synced');
     } else {
       // A new account has no cloud document yet. The UI will upload its
       // current local state once, after this explicit signal.
       syncListeners.forEach((fn) => fn({ type: 'missing-remote-state' }));
+      emitSyncStatus('syncing');
     }
   }, (err) => {
     console.warn('Firestore realtime sync error:', err);
+    emitSyncStatus(navigator.onLine ? 'error' : 'offline');
   });
 }
 
@@ -204,6 +217,7 @@ export async function syncStateToCloud(stateData, debounceMs = 1000) {
 
   return new Promise((resolve) => {
     if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
+    emitSyncStatus(navigator.onLine ? 'syncing' : 'offline');
 
     cloudSyncTimeout = setTimeout(async () => {
       try {
@@ -218,9 +232,11 @@ export async function syncStateToCloud(stateData, debounceMs = 1000) {
         };
 
         await setDoc(userDocRef, payload, { merge: true });
+        emitSyncStatus('synced');
         resolve(true);
       } catch (err) {
         console.error('Failed to sync state to cloud:', err);
+        emitSyncStatus(navigator.onLine ? 'error' : 'offline');
         resolve(false);
       }
     }, debounceMs);

@@ -24,15 +24,22 @@ import {
   logoutUser,
   onAuthChanged,
   onCloudDataChanged,
+  onSyncStatusChanged,
   syncStateToCloud
-} from './firebase-config.js';
+} from './firebase-config.js?v=aqsha_sync_v4';
 
 import Tesseract from '../vendor/tesseract.esm.min.js';
 
 import {
   initializeStateStorage,
   saveStateToIndexedDB
-} from './storage.js';
+} from './storage.js?v=aqsha_sync_v4';
+
+import {
+  ensureSyncSchema,
+  mergeStates,
+  prepareLocalStateForSave
+} from './state-sync.js?v=aqsha_sync_v4';
 
 // Keep the established key so the existing planner data is available right
 // away after the redesign. The AQSHA key is only a fallback for local drafts.
@@ -40,6 +47,7 @@ const STORAGE_KEY = 'budget_planner_state_v1';
 const AQSHA_STORAGE_KEY = 'aqsha_budget_state_v2';
 let applyingRemoteState = false;
 let storageReady = false;
+let lastPersistedState = null;
 
 // Bank-card themes inspired by the visual language of the real products.
 // They are illustrations only: no real card details or numbers are displayed.
@@ -358,7 +366,7 @@ function normalizeState(rawState) {
       : '')
   }));
 
-  return normalized;
+  return ensureSyncSchema(normalized, raw.lastUpdated || new Date().toISOString());
 }
 
 function loadState() {
@@ -389,6 +397,8 @@ function loadState() {
 
 function saveState() {
   try {
+    state = prepareLocalStateForSave(state, lastPersistedState);
+    lastPersistedState = JSON.parse(JSON.stringify(state));
     saveStateToIndexedDB(state).catch((err) => {
       console.warn('Ошибка сохранения в IndexedDB:', err);
       window.showToast?.('Не удалось сохранить данные на устройстве. Освободи место в браузере.', '⚠️');
@@ -1530,6 +1540,15 @@ function updateAuthButton(user) {
   button.innerText = user ? `Выйти: ${user.displayName || user.email || 'Google'}` : 'Войти через Google';
 }
 
+function updateSyncStatus(status) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const labels = { local: 'Локально', syncing: 'Синхронизация…', synced: 'Синхронизировано', offline: 'Офлайн', error: 'Ошибка синка' };
+  const colors = { local: 'text-[#7E7B73]', syncing: 'text-amber-700', synced: 'text-emerald-700', offline: 'text-[#7E7B73]', error: 'text-red-700' };
+  el.className = `text-[10px] font-semibold ${colors[status] || colors.local}`;
+  el.textContent = labels[status] || labels.local;
+}
+
 window.toggleGoogleAuth = async function() {
   try {
     const button = document.getElementById('btn-google-auth');
@@ -1846,24 +1865,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const button = document.getElementById('btn-google-auth');
     if (button) button.dataset.signedIn = user ? 'true' : 'false';
     updateAuthButton(user);
+    updateSyncStatus(user ? 'syncing' : 'local');
   });
 
   onCloudDataChanged((event) => {
     if (event.type === 'remote-state' && event.data) {
       applyingRemoteState = true;
-      state = normalizeState(event.data);
+      state = mergeStates(state, event.data);
+      lastPersistedState = JSON.parse(JSON.stringify(state));
       saveStateToIndexedDB(state).catch((err) => console.warn('Не удалось сохранить облачные данные локально:', err));
       applyingRemoteState = false;
       renderAll();
+      updateSyncStatus('synced');
     }
     if (event.type === 'missing-remote-state' && storageReady) syncStateToCloud(state, 0);
   });
+
+  onSyncStatusChanged(updateSyncStatus);
 
   // Start cloud auth only after local data are loaded, so an empty first render
   // cannot overwrite data that already exist in Firebase.
   initializeStateStorage({ normalizeState, initialState: INITIAL_STATE })
     .then((result) => {
       state = normalizeState(result.state);
+      lastPersistedState = JSON.parse(JSON.stringify(state));
       storageReady = true;
       renderAll();
       if (result.migrated) {
@@ -1875,6 +1900,9 @@ document.addEventListener('DOMContentLoaded', () => {
       window.showToast('Браузер не дал доступ к локальному хранилищу. Проверь настройки сайта.', '⚠️');
     })
     .finally(() => initFirebase());
+
+  window.addEventListener('offline', () => updateSyncStatus('offline'));
+  window.addEventListener('online', () => updateSyncStatus('syncing'));
 });
 
 renderAll();
