@@ -714,6 +714,9 @@
           <button onclick="openReceiptImportModal()" class="px-4 py-2 bg-[#EAE6DC] hover:bg-[#DDD8CD] text-[#171717] text-xs font-semibold rounded-full transition">
             ⌁ Импорт квитанции
           </button>
+          <button onclick="openStatementImportModal()" class="px-4 py-2 bg-[#465948] hover:bg-[#38483a] text-white text-xs font-semibold rounded-full transition">
+            ⇩ Выписка
+          </button>
           <button onclick="openModal('tx', 'expense')" class="px-4 py-2 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-sm transition">
             + Операция
           </button>
@@ -1124,6 +1127,24 @@
     </div>
   </div>
 
+  <!-- MODAL: LOCAL BANK STATEMENT IMPORT -->
+  <div id="modal-statement-import" class="fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative animate-scaleUp">
+      <div class="flex justify-between items-center mb-3">
+        <div><h3 class="font-bold text-base text-[#171717]">⇩ Импорт банковской выписки</h3><p class="text-[11px] text-[#7E7B73] mt-1">Kaspi и BCC: сейчас CSV, остальные форматы после проверки образцов.</p></div>
+        <button onclick="closeModal('modal-statement-import')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="rounded-2xl bg-[#EEF2EC] border border-[#D7E1D5] p-3 text-[11px] leading-relaxed text-[#465948] mb-4">Файл читается целиком в этом браузере. AQSHA не загружает выписку в Firebase: в облако попадут только операции, которые ты сам подтвердишь.</div>
+      <div class="grid sm:grid-cols-2 gap-3 mb-3">
+        <label class="block text-[11px] font-semibold text-[#7E7B73]">Счёт для операций<select id="statement-import-account" class="mt-1 w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717]"></select></label>
+        <label class="block text-[11px] font-semibold text-[#7E7B73]">Файл выписки<input id="statement-import-file" type="file" accept=".csv,.txt,.pdf,.xlsx,.xls,text/csv,text/plain,application/pdf" onchange="handleStatementFile(event)" class="mt-1 block w-full text-xs text-[#5D5A53] file:mr-2 file:border-0 file:rounded-full file:bg-[#EAE6DC] file:px-3 file:py-2 file:text-xs file:font-bold"></label>
+      </div>
+      <div id="statement-import-status" class="min-h-5 text-[11px] text-[#7E7B73] mb-2" aria-live="polite"></div>
+      <div id="statement-import-preview" class="max-h-72 overflow-y-auto bg-white border border-[#DFDAD0] rounded-xl mb-4 p-2"></div>
+      <button id="statement-import-confirm" type="button" onclick="confirmStatementImport()" disabled class="w-full py-3 bg-[#171717] disabled:bg-[#AAA69B] hover:bg-black text-white text-xs font-semibold rounded-full transition">Подтвердить импорт выбранных операций</button>
+    </div>
+  </div>
+
 
   <!-- MODAL: ACCRUE BCC INTEREST -->
   <div id="modal-interest" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
@@ -1327,7 +1348,7 @@
 
 
   <!-- SCRIPTS MODULE -->
-  <script type="module" src="./js/app.js?v=aqsha_sync_v4"></script>
+  <script type="module" src="./js/app.js?v=aqsha_import_v5"></script>
 
 </body>
 </html>

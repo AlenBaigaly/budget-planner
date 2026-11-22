@@ -41,6 +41,9 @@ import {
   prepareLocalStateForSave
 } from './state-sync.js?v=aqsha_sync_v4';
 
+import { bankAdapters, unsupportedFileMessage } from './imports/adapters.js';
+import { chooseAdapter, findDuplicates, markOwnTransfers } from './imports/core.js';
+
 // Keep the established key so the existing planner data is available right
 // away after the redesign. The AQSHA key is only a fallback for local drafts.
 const STORAGE_KEY = 'budget_planner_state_v1';
@@ -1298,6 +1301,7 @@ function renderAnalyticsChart() {
 // MODALS & USER ACTIONS
 // -------------------------------------------------------------
 let currentModalTxType = 'expense';
+let statementImportDraft = [];
 
 function getLocalDateValue(date = new Date()) {
   const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -1376,6 +1380,67 @@ window.openReceiptImportModal = function() {
   if (text) text.value = '';
   setReceiptImportStatus('');
   document.getElementById('modal-receipt-import')?.classList.remove('hidden');
+};
+
+function renderStatementPreview() {
+  const container = document.getElementById('statement-import-preview');
+  const confirmButton = document.getElementById('statement-import-confirm');
+  if (!container || !confirmButton) return;
+  if (!statementImportDraft.length) {
+    container.innerHTML = '<p class="text-[11px] text-[#7E7B73]">После выбора выписки здесь появятся найденные операции.</p>';
+    confirmButton.disabled = true;
+    return;
+  }
+  container.innerHTML = statementImportDraft.map((operation, index) => {
+    const options = state.categories.filter((cat) => cat.type === operation.type).map((cat) => `<option value="${cat.id}" ${cat.id === operation.categoryId ? 'selected' : ''}>${cat.icon || '🏷️'} ${cat.name}</option>`).join('');
+    return `<label class="block p-2 border-b border-[#ECE8DC] text-[11px] ${operation.duplicate ? 'opacity-50' : ''}"><div class="flex gap-2"><input type="checkbox" data-import-include="${index}" ${operation.duplicate ? 'disabled' : 'checked'}><div class="min-w-0 flex-1"><b class="block truncate">${escapeHtml(operation.description || 'Операция без описания')}</b><span class="text-[#7E7B73]">${operation.date} · ${operation.bank}${operation.isOwnTransfer ? ' · свой перевод' : ''}</span><select data-import-category="${index}" class="mt-1 w-full bg-white border border-[#DFDAD0] rounded-lg px-2 py-1 text-[10px]">${options}</select></div><b class="${operation.type === 'income' ? 'text-emerald-700' : 'text-red-700'}">${operation.type === 'income' ? '+' : '-'}${formatMoney(operation.amount)} ₸</b></div>${operation.duplicate ? '<span class="text-amber-700">Дубликат — пропущен</span>' : ''}</label>`;
+  }).join('');
+  confirmButton.disabled = !statementImportDraft.some((item) => !item.duplicate);
+}
+
+window.openStatementImportModal = function() {
+  const file = document.getElementById('statement-import-file');
+  const account = document.getElementById('statement-import-account');
+  if (file) file.value = '';
+  if (account) account.innerHTML = state.accounts.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join('');
+  statementImportDraft = [];
+  renderStatementPreview();
+  document.getElementById('modal-statement-import')?.classList.remove('hidden');
+};
+
+window.handleStatementFile = async function(event) {
+  const file = event.target.files?.[0];
+  const status = document.getElementById('statement-import-status');
+  if (!file || !status) return;
+  const adapter = chooseAdapter(file, bankAdapters);
+  if (!adapter) { status.textContent = unsupportedFileMessage(file); status.className = 'text-[11px] text-red-700'; return; }
+  try {
+    status.textContent = 'Читаю выписку только в этом браузере…';
+    const accountId = document.getElementById('statement-import-account')?.value || '';
+    const parsed = await adapter.parse(file);
+    const categorized = parsed.map((item) => ({ ...item, categoryId: guessReceiptCategory(item.description, item.type) }));
+    statementImportDraft = findDuplicates(markOwnTransfers(categorized, state.accounts), state.transactions, accountId);
+    renderStatementPreview();
+    status.textContent = `Найдено операций: ${statementImportDraft.length}. Проверь строки и категории.`;
+    status.className = 'text-[11px] text-emerald-700';
+  } catch (error) {
+    status.textContent = error.message || 'Не удалось прочитать выписку.';
+    status.className = 'text-[11px] text-red-700';
+  }
+};
+
+window.confirmStatementImport = function() {
+  const accountId = document.getElementById('statement-import-account')?.value;
+  const included = statementImportDraft.filter((item, index) => document.querySelector(`[data-import-include="${index}"]`)?.checked && !item.duplicate);
+  if (!accountId || !included.length) return;
+  included.forEach((item, index) => {
+    const originalIndex = statementImportDraft.indexOf(item);
+    const categoryId = document.querySelector(`[data-import-category="${originalIndex}"]`)?.value || item.categoryId;
+    const ownTransfer = item.isOwnTransfer;
+    state.transactions.unshift({ id: `import_${Date.now()}_${index}`, type: ownTransfer ? 'transfer' : item.type, amount: item.amount, date: item.date, time: item.time || '', accountId, toAccountId: ownTransfer ? accountId : '', categoryId: ownTransfer ? '' : categoryId, note: item.description || 'Импорт из выписки', importFingerprint: item.fingerprint, importSource: item.bank, currency: item.currency || 'KZT', importedAt: new Date().toISOString() });
+  });
+  saveState(); renderAll(); window.closeModal('modal-statement-import');
+  window.showToast(`Импортировано: ${included.length}`, '✓');
 };
 
 window.handleReceiptFile = async function(event) {
