@@ -669,7 +669,7 @@ window.deleteActiveCard = function() {
   if (cardAccounts.length === 0) return;
 
   const target = cardAccounts[activeBankCardIdx];
-  if (!confirm(`Удалить карту «${target.name}» (${target.maskedNumber})?`)) {
+  if (!confirm(`Удалить карту «${target.name}» (${target.maskedNumber})?\n\nОперации по ней останутся в журнале, но карта перестанет участвовать в общем балансе.`)) {
     return;
   }
 
@@ -678,6 +678,59 @@ window.deleteActiveCard = function() {
   saveState();
   renderAll();
   window.showToast(`Карта «${target.name}» удалена`, '🗑️');
+};
+
+function getAccountTransactionDelta(accountId) {
+  return state.transactions.reduce((delta, transaction) => {
+    const amount = Number(transaction.amount) || 0;
+    if (transaction.type === 'income' && transaction.accountId === accountId) return delta + amount;
+    if (transaction.type === 'expense' && transaction.accountId === accountId) return delta - amount;
+    if (transaction.type === 'transfer') {
+      if (transaction.accountId === accountId) delta -= amount;
+      if (transaction.toAccountId === accountId) delta += amount;
+    }
+    return delta;
+  }, 0);
+}
+
+window.openEditActiveCardModal = function() {
+  const cardAccounts = state.accounts.filter((account) => account.type === 'card');
+  const card = cardAccounts[activeBankCardIdx];
+  if (!card) {
+    window.showToast('Сначала добавь карту', '💳');
+    return;
+  }
+
+  document.getElementById('edit-card-id').value = card.id;
+  document.getElementById('edit-card-preset').value = CARD_THEMES[card.preset] ? card.preset : 'kaspi';
+  document.getElementById('edit-card-name').value = card.name || '';
+  document.getElementById('edit-card-balance').value = getAccountBalances()[card.id] ?? 0;
+  document.getElementById('modal-edit-card').classList.remove('hidden');
+};
+
+window.handleFormEditCard = function(event) {
+  event.preventDefault();
+  const cardId = document.getElementById('edit-card-id').value;
+  const card = state.accounts.find((account) => account.id === cardId && account.type === 'card');
+  const name = document.getElementById('edit-card-name').value.trim();
+  const targetBalance = Number(document.getElementById('edit-card-balance').value);
+
+  if (!card || !name || !Number.isFinite(targetBalance)) {
+    window.showToast('Заполни название и текущий баланс карты', '⚠️');
+    return;
+  }
+
+  card.preset = document.getElementById('edit-card-preset').value;
+  card.name = name;
+  // The shown amount is initial balance plus all saved movements. This keeps
+  // the operation history while allowing the user to reconcile real balance.
+  card.initialBalance = targetBalance - getAccountTransactionDelta(card.id);
+  card.updatedAt = new Date().toISOString();
+
+  saveState();
+  window.closeModal('modal-edit-card');
+  renderAll();
+  window.showToast(`Карта «${name}» обновлена`, '✓');
 };
 
 // -------------------------------------------------------------

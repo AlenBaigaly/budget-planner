@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-bcc-pdf-v6';
+const CACHE_NAME = 'aqsha-budget-card-edit-v7';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_bcc_pdf_v6',
+  './js/app.js?v=aqsha_card_edit_v7',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v4',
   './js/imports/core.js',

@@ -366,6 +366,9 @@
             </div>
 
             <div class="flex items-center gap-3">
+              <button onclick="openEditActiveCardModal()" title="Настроить активную карту" class="text-xs font-bold text-[#465948] hover:underline transition">
+                Настроить
+              </button>
               <button onclick="deleteActiveCard()" title="Удалить активную карту" class="text-neutral-400 hover:text-red-600 transition text-xs">
                 Удалить
               </button>
@@ -1032,6 +1035,45 @@
     </div>
   </div>
 
+  <!-- MODAL: EDIT BANK CARD -->
+  <div id="modal-edit-card" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-scaleUp space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-[#ECE8DC]">
+        <div>
+          <h3 class="font-bold text-base text-[#171717]">Настроить карту</h3>
+          <p class="text-[11px] text-[#7E7B73] mt-1">Измени банк, название или текущий остаток.</p>
+        </div>
+        <button onclick="closeModal('modal-edit-card')" class="w-8 h-8 rounded-full bg-[#EAE6DC] flex items-center justify-center text-xs text-[#555] hover:text-black" aria-label="Закрыть">✕</button>
+      </div>
+      <form onsubmit="handleFormEditCard(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="edit-card-id">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1" for="edit-card-preset">Банк / тип карты</label>
+          <select id="edit-card-preset" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
+            <option value="kaspi">Kaspi Bank (Kaspi Gold)</option>
+            <option value="bcc_iron">Банк ЦентрКредит (BCC #IronCard)</option>
+            <option value="bcc_karta">Банк ЦентрКредит (BCC #картакарта)</option>
+            <option value="halyk">Halyk Bank</option>
+            <option value="forte">ForteBank</option>
+            <option value="jusan">Jusan Bank</option>
+            <option value="custom_ocean">Другая карта (синий стиль)</option>
+            <option value="custom_gold">Другая карта (золотой стиль)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1" for="edit-card-name">Название карты</label>
+          <input type="text" id="edit-card-name" required maxlength="60" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-sm text-[#171717] focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1" for="edit-card-balance">Текущий баланс (₸)</label>
+          <input type="number" id="edit-card-balance" required step="0.01" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-base font-bold text-[#171717] focus:outline-none">
+          <p class="text-[10px] text-[#7E7B73] mt-1">Операции сохранятся; приложение скорректирует стартовый остаток, чтобы отобразить указанную сумму.</p>
+        </div>
+        <button type="submit" class="w-full py-3 bg-[#171717] hover:bg-black text-white text-xs font-semibold rounded-full shadow-md transition">Сохранить изменения</button>
+      </form>
+    </div>
+  </div>
+
 
   <!-- MODAL: ADD TRANSACTION -->
   <div id="modal-tx" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
@@ -1348,7 +1390,7 @@
 
 
   <!-- SCRIPTS MODULE -->
-  <script type="module" src="./js/app.js?v=aqsha_bcc_pdf_v6"></script>
+  <script type="module" src="./js/app.js?v=aqsha_card_edit_v7"></script>
 
 </body>
 </html>
