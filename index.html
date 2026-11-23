@@ -979,7 +979,7 @@
           </div>
 
           <div class="flex justify-between items-center my-3.5">
-            <div class="flex items-center gap-3">
+            <div id="preview-card-middle" class="flex items-center gap-3">
               <div class="emv-chip"></div>
               <svg class="w-5 h-5 text-white/80 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M8.5 16.5a5 5 0 0 1 0-9"></path>
@@ -1006,6 +1006,7 @@
         <div>
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Банк / Стиль оформления</label>
           <select id="card-preset" onchange="updateCardModalPreview()" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
+            <option value="avtobys">Avtobys — транспортная карта</option>
             <option value="kaspi">Kaspi Bank (Kaspi Gold • Рубиновый)</option>
             <option value="bcc_iron">Банк ЦентрКредит (BCC #IronCard • Титан/Сталь)</option>
             <option value="bcc_karta">Банк ЦентрКредит (BCC #картакарта • Изумруд)</option>
@@ -1071,6 +1072,7 @@
         <div>
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1" for="edit-card-preset">Банк / тип карты</label>
           <select id="edit-card-preset" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2 text-xs text-[#171717] focus:outline-none">
+            <option value="avtobys">Avtobys — транспортная карта</option>
             <option value="kaspi">Kaspi Bank (Kaspi Gold)</option>
             <option value="bcc_iron">Банк ЦентрКредит (BCC #IronCard)</option>
             <option value="bcc_karta">Банк ЦентрКредит (BCC #картакарта)</option>
@@ -1411,7 +1413,7 @@
 
 
   <!-- SCRIPTS MODULE -->
-  <script type="module" src="./js/app.js?v=aqsha_card-animation_v8"></script>
+  <script type="module" src="./js/app.js?v=aqsha_avtobys_v9"></script>
 
 </body>
 </html>

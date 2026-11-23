@@ -55,6 +55,15 @@ let lastPersistedState = null;
 // Bank-card themes inspired by the visual language of the real products.
 // They are illustrations only: no real card details or numbers are displayed.
 const CARD_THEMES = {
+  avtobys: {
+    kind: 'transport',
+    bgStyle: 'background: radial-gradient(circle at 92% 14%, rgba(75,184,224,.34) 0 3px, transparent 4px) 0 0/36px 36px, linear-gradient(122deg, #123D8B 0%, #0A2B69 55%, #061A48 100%) !important; background-color: #0A2B69 !important; color: #FFFFFF !important; border: 1px solid #2A77C8 !important;',
+    bankName: '<div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#F6921E]"></span><span class="font-black text-sm tracking-tight text-white lowercase">avtobys</span></div>',
+    sub: '<span class="text-[9px] font-black tracking-[.14em] text-[#A8E5FF]">TRANSPORT</span>',
+    text: '#FFFFFF',
+    muted: 'rgba(218,242,255,.78)',
+    decor: '<div style="position:absolute;right:-28px;bottom:-72px;width:250px;height:160px;border-radius:50%;border:15px solid rgba(246,146,30,.85);transform:rotate(-21deg)"></div><div style="position:absolute;right:-45px;bottom:-84px;width:264px;height:174px;border-radius:50%;border:5px solid rgba(105,205,239,.9);transform:rotate(-21deg)"></div>'
+  },
   kaspi: {
     bgStyle: 'background: radial-gradient(circle at 88% 8%, rgba(255,255,255,.58), transparent 26%), linear-gradient(118deg, #F7E5A6 0%, #D9AD45 38%, #AA7418 69%, #6E4710 100%) !important; background-color: #D9AD45 !important; color: #30220E !important; border: 1px solid #C18D29 !important;',
     bankName: '<div class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded-full bg-[#3B290F] flex items-center justify-center"><div class="w-1.5 h-1.5 rounded-full bg-[#ECCA71]"></div></div><span class="font-extrabold text-sm tracking-tight text-[#30220E]">kaspi.kz</span></div>',
@@ -105,6 +114,11 @@ const CARD_THEMES = {
     sub: '<span class="text-xs font-bold text-amber-100">VISA</span>'
   }
 };
+
+function getCardTheme(account) {
+  if (account?.preset === 'avtobys' || /\bavtobys\b/i.test(account?.name || '')) return CARD_THEMES.avtobys;
+  return CARD_THEMES[account?.preset] || CARD_THEMES.kaspi;
+}
 
 // Initial state for Kazakhstan
 const INITIAL_STATE = {
@@ -515,8 +529,9 @@ function renderCardsDeck() {
     else if (relPos === 1) posClass = 'card-pos-1';
     else if (relPos === 2) posClass = 'card-pos-2';
 
-    const presetTheme = CARD_THEMES[acc.preset] || CARD_THEMES.kaspi;
+    const presetTheme = getCardTheme(acc);
     const cardBal = balances[acc.id] || 0;
+    const isTransportCard = presetTheme.kind === 'transport';
 
     return `
       <div id="card-elem-${index}" onclick="selectCard(${index})"
@@ -530,26 +545,18 @@ function renderCardsDeck() {
         </div>
 
         <div class="relative z-10 flex justify-between items-center my-3.5">
-          <div class="flex items-center gap-3">
-            <div class="emv-chip"></div>
-            <svg class="w-5 h-5 opacity-80" style="color:${presetTheme.text || '#FFFFFF'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M8.5 16.5a5 5 0 0 1 0-9"></path>
-              <path d="M12 19a8.5 8.5 0 0 0 0-14"></path>
-            </svg>
-          </div>
-          <div class="text-base font-bold tracking-tight font-mono-card" style="color:${presetTheme.text || '#FFFFFF'}">
-            ${acc.name}
-          </div>
+          ${isTransportCard ? '<div class="text-[10px] font-black uppercase tracking-[.12em] text-white/90">Транспортная карта</div>' : `<div class="flex items-center gap-3"><div class="emv-chip"></div><svg class="w-5 h-5 opacity-80" style="color:${presetTheme.text || '#FFFFFF'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 16.5a5 5 0 0 1 0-9"></path><path d="M12 19a8.5 8.5 0 0 0 0-14"></path></svg></div>`}
+          <div class="text-base font-bold tracking-tight ${isTransportCard ? '' : 'font-mono-card'}" style="color:${presetTheme.text || '#FFFFFF'}">${isTransportCard ? 'Стандартная' : acc.name}</div>
         </div>
 
         <div class="relative z-10 mt-2">
           <div class="text-[10px] font-medium uppercase tracking-wider" style="color:${presetTheme.muted || 'rgba(255,255,255,.70)'}">
-            ${acc.isCreditLimit ? 'Кредитный лимит' : 'Баланс карты'}
+            ${isTransportCard ? 'Баланс поездок' : (acc.isCreditLimit ? 'Кредитный лимит' : 'Баланс карты')}
           </div>
           <div class="text-2xl font-black tracking-tight" style="color:${presetTheme.text || '#FFFFFF'}">₸${formatMoney(cardBal)}</div>
           <div class="flex justify-between items-end mt-1 text-[11px] font-mono-card" style="color:${presetTheme.muted || 'rgba(255,255,255,.80)'}">
-            <span>${acc.maskedNumber || '•••• ****'}</span>
-            <span class="text-[9px] uppercase tracking-widest">${acc.holderName || 'CARDHOLDER'}</span>
+            <span>${isTransportCard ? 'Бесконтактная оплата' : (acc.maskedNumber || '•••• ****')}</span>
+            <span class="text-[9px] uppercase tracking-widest">${isTransportCard ? escapeHtml(acc.name) : (acc.holderName || 'CARDHOLDER')}</span>
           </div>
         </div>
       </div>
@@ -615,14 +622,18 @@ window.updateCardModalPreview = function() {
   if (!previewCard) return;
 
   const presetTheme = CARD_THEMES[preset] || CARD_THEMES.kaspi;
+  const isTransportCard = presetTheme.kind === 'transport';
   previewCard.style = presetTheme.bgStyle;
 
   document.getElementById('preview-bank-logo').innerHTML = presetTheme.bankName;
   document.getElementById('preview-ps-logo').innerHTML = presetTheme.sub;
-  document.getElementById('preview-card-title').innerText = name;
+  document.getElementById('preview-card-title').innerText = isTransportCard ? 'Стандартная' : name;
   document.getElementById('preview-balance').innerText = `₸${formatMoney(balance)}`;
-  document.getElementById('preview-number').innerText = `•••• ${number.slice(-4)}`;
-  document.getElementById('preview-holder').innerText = holder.toUpperCase();
+  document.getElementById('preview-number').innerText = isTransportCard ? 'Бесконтактная оплата' : `•••• ${number.slice(-4)}`;
+  document.getElementById('preview-holder').innerText = isTransportCard ? name : holder.toUpperCase();
+  document.getElementById('preview-card-middle').innerHTML = isTransportCard
+    ? '<div class="text-[10px] font-black uppercase tracking-[.12em] text-white/90">Транспортная карта</div>'
+    : '<div class="flex items-center gap-3"><div class="emv-chip"></div><svg class="w-5 h-5 text-white/80 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 16.5a5 5 0 0 1 0-9"></path><path d="M12 19a8.5 8.5 0 0 0 0-14"></path></svg></div>';
 };
 
 window.handleFormAddCard = function(e) {
@@ -702,7 +713,7 @@ window.openEditActiveCardModal = function() {
   }
 
   document.getElementById('edit-card-id').value = card.id;
-  document.getElementById('edit-card-preset').value = CARD_THEMES[card.preset] ? card.preset : 'kaspi';
+  document.getElementById('edit-card-preset').value = getCardTheme(card) === CARD_THEMES.avtobys ? 'avtobys' : (CARD_THEMES[card.preset] ? card.preset : 'kaspi');
   document.getElementById('edit-card-name').value = card.name || '';
   document.getElementById('edit-card-balance').value = getAccountBalances()[card.id] ?? 0;
   document.getElementById('modal-edit-card').classList.remove('hidden');
