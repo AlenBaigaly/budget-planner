@@ -1224,18 +1224,12 @@ window.renderOperationsFeed = function() {
 // -------------------------------------------------------------
 // RENDERERS: DEBTS
 // -------------------------------------------------------------
-function formatDebtDueDate(date) {
-  if (!date) return 'Без срока';
-  const due = new Date(`${date}T00:00:00`);
-  if (Number.isNaN(due.getTime())) return 'Без срока';
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const days = Math.round((due - today) / 86400000);
-  const label = due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-  if (days < 0) return `Просрочен: ${label}`;
-  if (days === 0) return 'Вернуть сегодня';
-  if (days === 1) return 'Вернуть завтра';
-  return `До ${label}`;
+function formatDebtLoanDate(date, kind) {
+  if (!date) return 'Дата займа не указана';
+  const loanDate = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(loanDate.getTime())) return 'Дата займа не указана';
+  const label = loanDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  return `${kind === 'payable' ? 'Взял' : 'Дал'} ${label}`;
 }
 
 function renderDebts() {
@@ -1260,11 +1254,11 @@ function renderDebts() {
     return;
   }
 
-  list.innerHTML = [...active].sort((a, b) => String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999'))).map((debt) => {
+  list.innerHTML = [...active].sort((a, b) => String(b.loanDate || b.createdAt || '').localeCompare(String(a.loanDate || a.createdAt || ''))).map((debt) => {
     const payableDebt = debt.kind === 'payable';
     const account = state.accounts.find((item) => item.id === debt.accountId);
-    const overdue = debt.dueDate && new Date(`${debt.dueDate}T00:00:00`) < new Date(new Date().setHours(0, 0, 0, 0));
-    return `<article class="border border-[#DFDAD0] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div class="flex items-start gap-3"><span class="w-10 h-10 rounded-2xl ${payableDebt ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'} flex items-center justify-center text-lg">${payableDebt ? '↗' : '↙'}</span><div><div class="flex flex-wrap items-center gap-2"><h3 class="font-bold text-sm text-[#171717]">${escapeHtml(debt.person)}</h3><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${payableDebt ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}">${payableDebt ? 'Я должен' : 'Мне должны'}</span></div><p class="text-xs ${overdue ? 'text-red-700 font-semibold' : 'text-[#7E7B73]'} mt-1">${formatDebtDueDate(debt.dueDate)}${account ? ` · ${escapeHtml(account.name)}` : ''}</p>${debt.note ? `<p class="text-[11px] text-[#7E7B73] mt-1">${escapeHtml(debt.note)}</p>` : ''}</div></div><div class="flex items-center gap-2 sm:text-right"><div class="font-black text-lg ${payableDebt ? 'text-red-700' : 'text-emerald-700'} mr-auto sm:mr-2">₸${formatMoney(debt.amount)}</div><button onclick="markDebtPaid('${debt.id}')" class="px-3 py-2 bg-[#465948] hover:bg-[#38483a] text-white text-[11px] font-bold rounded-xl">Погашен</button><button onclick="deleteDebt('${debt.id}')" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-bold rounded-xl" aria-label="Удалить долг">Удалить</button></div></article>`;
+    const loanDate = debt.loanDate || (debt.createdAt ? debt.createdAt.slice(0, 10) : '');
+    return `<article class="border border-[#DFDAD0] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div class="flex items-start gap-3"><span class="w-10 h-10 rounded-2xl ${payableDebt ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'} flex items-center justify-center text-lg">${payableDebt ? '↗' : '↙'}</span><div><div class="flex flex-wrap items-center gap-2"><h3 class="font-bold text-sm text-[#171717]">${escapeHtml(debt.person)}</h3><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${payableDebt ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}">${payableDebt ? 'Я должен' : 'Мне должны'}</span></div><p class="text-xs text-[#7E7B73] mt-1">${formatDebtLoanDate(loanDate, debt.kind)}${account ? ` · ${escapeHtml(account.name)}` : ''}</p>${debt.note ? `<p class="text-[11px] text-[#7E7B73] mt-1">${escapeHtml(debt.note)}</p>` : ''}</div></div><div class="flex items-center gap-2 sm:text-right"><div class="font-black text-lg ${payableDebt ? 'text-red-700' : 'text-emerald-700'} mr-auto sm:mr-2">₸${formatMoney(debt.amount)}</div><button onclick="markDebtPaid('${debt.id}')" class="px-3 py-2 bg-[#465948] hover:bg-[#38483a] text-white text-[11px] font-bold rounded-xl">Погашен</button><button onclick="deleteDebt('${debt.id}')" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-bold rounded-xl" aria-label="Удалить долг">Удалить</button></div></article>`;
   }).join('');
 }
 
@@ -1274,7 +1268,7 @@ window.openAddDebtModal = function() {
   document.getElementById('debt-kind').value = 'payable';
   document.getElementById('debt-person').value = '';
   document.getElementById('debt-amount').value = '';
-  document.getElementById('debt-due-date').value = '';
+  document.getElementById('debt-loan-date').value = makeTimestamp().date;
   document.getElementById('debt-note').value = '';
   document.getElementById('modal-debt').classList.remove('hidden');
 };
@@ -1285,7 +1279,7 @@ window.handleDebtForm = function(event) {
   const amount = Number(document.getElementById('debt-amount').value);
   if (!person || !Number.isFinite(amount) || amount <= 0) return;
   if (!Array.isArray(state.debts)) state.debts = [];
-  state.debts.unshift({ id: `debt_${Date.now()}`, kind: document.getElementById('debt-kind').value, person, amount, dueDate: document.getElementById('debt-due-date').value, accountId: document.getElementById('debt-account').value, note: document.getElementById('debt-note').value.trim(), status: 'active', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  state.debts.unshift({ id: `debt_${Date.now()}`, kind: document.getElementById('debt-kind').value, person, amount, loanDate: document.getElementById('debt-loan-date').value, accountId: document.getElementById('debt-account').value, note: document.getElementById('debt-note').value.trim(), status: 'active', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   saveState();
   renderAll();
   window.closeModal('modal-debt');

@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-debts-v11';
+const CACHE_NAME = 'aqsha-budget-debts-v12';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_debts_v11',
+  './js/app.js?v=aqsha_debts_v12',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v5',
   './js/imports/core.js',
