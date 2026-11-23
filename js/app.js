@@ -555,7 +555,7 @@ function renderCardsDeck() {
           </div>
           <div class="text-2xl font-black tracking-tight" style="color:${presetTheme.text || '#FFFFFF'}">₸${formatMoney(cardBal)}</div>
           <div class="flex justify-between items-end mt-1 text-[11px] font-mono-card" style="color:${presetTheme.muted || 'rgba(255,255,255,.80)'}">
-            <span>${isTransportCard ? 'Бесконтактная оплата' : (acc.maskedNumber || '•••• ****')}</span>
+            <span>${isTransportCard ? 'Бесконтактная оплата' : '•••• ••••'}</span>
             <span class="text-[9px] uppercase tracking-widest">${isTransportCard ? escapeHtml(acc.name) : (acc.holderName || 'CARDHOLDER')}</span>
           </div>
         </div>
@@ -568,7 +568,7 @@ function renderCardsDeck() {
   // Update dots & active name
   const cur = cardAccounts[activeBankCardIdx];
   const nameLabel = document.getElementById('active-card-name');
-  if (nameLabel && cur) nameLabel.innerText = `${cur.name} (${cur.maskedNumber || ''})`;
+  if (nameLabel && cur) nameLabel.innerText = cur.name;
 
   const dotsContainer = document.getElementById('deck-dots');
   if (dotsContainer) {
@@ -680,7 +680,7 @@ window.deleteActiveCard = function() {
   if (cardAccounts.length === 0) return;
 
   const target = cardAccounts[activeBankCardIdx];
-  if (!confirm(`Удалить карту «${target.name}» (${target.maskedNumber})?\n\nОперации по ней останутся в журнале, но карта перестанет участвовать в общем балансе.`)) {
+  if (!confirm(`Удалить карту «${target.name}»?\n\nОперации по ней останутся в журнале, но карта перестанет участвовать в общем балансе.`)) {
     return;
   }
 
@@ -1635,7 +1635,7 @@ function populateSelectAccounts(preselectedId = null) {
   const filterAcc = document.getElementById('filter-account');
 
   const options = state.accounts.map(acc => {
-    return `<option value="${acc.id}" ${acc.id === preselectedId ? 'selected' : ''}>${acc.name} (${acc.maskedNumber || acc.currency})</option>`;
+    return `<option value="${acc.id}" ${acc.id === preselectedId ? 'selected' : ''}>${acc.name} (${acc.currency || '₸'})</option>`;
   }).join('');
 
   if (selFrom) selFrom.innerHTML = options;

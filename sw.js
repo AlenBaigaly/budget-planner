@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-avtobys-v9';
+const CACHE_NAME = 'aqsha-budget-card-privacy-v10';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_avtobys_v9',
+  './js/app.js?v=aqsha_card-privacy_v10',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v4',
   './js/imports/core.js',
