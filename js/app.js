@@ -520,7 +520,7 @@ function renderCardsDeck() {
 
     return `
       <div id="card-elem-${index}" onclick="selectCard(${index})"
-           class="bank-card ${posClass}"
+           class="bank-card ${posClass}${relPos === 0 ? ' card-enter' : ''}"
            style="${presetTheme.bgStyle}">
         ${presetTheme.decor || ''}
 
