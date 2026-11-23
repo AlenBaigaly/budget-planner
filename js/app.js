@@ -39,7 +39,7 @@ import {
   ensureSyncSchema,
   mergeStates,
   prepareLocalStateForSave
-} from './state-sync.js?v=aqsha_sync_v4';
+} from './state-sync.js?v=aqsha_sync_v5';
 
 import { bankAdapters, unsupportedFileMessage } from './imports/adapters.js';
 import { chooseAdapter, findDuplicates, markOwnTransfers } from './imports/core.js';
@@ -355,7 +355,8 @@ const INITIAL_STATE = {
       categoryId: 'cat_transport',
       note: 'АЗС Compass (АИ-95)'
     }
-  ]
+  ],
+  debts: []
 };
 
 let state = loadState();
@@ -369,6 +370,7 @@ function normalizeState(rawState) {
   normalized.transactions = Array.isArray(raw.transactions) ? raw.transactions : normalized.transactions;
   normalized.recurring = Array.isArray(raw.recurring) ? raw.recurring : normalized.recurring;
   normalized.goals = Array.isArray(raw.goals) ? raw.goals : normalized.goals;
+  normalized.debts = Array.isArray(raw.debts) ? raw.debts : [];
   normalized.limits = raw.limits || normalized.limits;
   normalized.closedDeposits = Array.isArray(raw.closedDeposits) ? raw.closedDeposits : [];
 
@@ -1066,7 +1068,7 @@ window.filterTxType = function(type, btn) {
 };
 
 window.switchScreen = function(screen, focusId = null) {
-  const screens = ['capital', 'deposits', 'operations', 'plan'];
+  const screens = ['capital', 'deposits', 'operations', 'debts', 'plan'];
   const selected = screens.includes(screen) ? screen : 'capital';
 
   screens.forEach((name) => {
@@ -1218,6 +1220,97 @@ window.renderOperationsFeed = function() {
 
   container.innerHTML = html;
 }
+
+// -------------------------------------------------------------
+// RENDERERS: DEBTS
+// -------------------------------------------------------------
+function formatDebtDueDate(date) {
+  if (!date) return 'Без срока';
+  const due = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(due.getTime())) return 'Без срока';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((due - today) / 86400000);
+  const label = due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  if (days < 0) return `Просрочен: ${label}`;
+  if (days === 0) return 'Вернуть сегодня';
+  if (days === 1) return 'Вернуть завтра';
+  return `До ${label}`;
+}
+
+function renderDebts() {
+  const debts = Array.isArray(state.debts) ? state.debts : [];
+  const active = debts.filter((debt) => debt.status !== 'paid');
+  const payable = active.filter((debt) => debt.kind === 'payable').reduce((sum, debt) => sum + Number(debt.amount || 0), 0);
+  const receivable = active.filter((debt) => debt.kind === 'receivable').reduce((sum, debt) => sum + Number(debt.amount || 0), 0);
+
+  const payableTotal = document.getElementById('debts-payable-total');
+  const receivableTotal = document.getElementById('debts-receivable-total');
+  const activeCount = document.getElementById('debts-active-count');
+  const sidebarCount = document.getElementById('sidebar-debt-count');
+  if (payableTotal) payableTotal.innerText = `₸${formatMoney(payable)}`;
+  if (receivableTotal) receivableTotal.innerText = `₸${formatMoney(receivable)}`;
+  if (activeCount) activeCount.innerText = `${active.length} ${active.length === 1 ? 'активный' : 'активных'}`;
+  if (sidebarCount) sidebarCount.innerText = String(active.length);
+
+  const list = document.getElementById('debts-list');
+  if (!list) return;
+  if (!active.length) {
+    list.innerHTML = '<div class="border border-dashed border-[#DFDAD0] rounded-2xl py-10 px-5 text-center"><div class="text-3xl mb-2">🤝</div><div class="font-bold text-sm text-[#171717]">Нет активных долгов</div><p class="text-xs text-[#7E7B73] mt-1">Добавь долг, чтобы не держать его в голове.</p></div>';
+    return;
+  }
+
+  list.innerHTML = [...active].sort((a, b) => String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999'))).map((debt) => {
+    const payableDebt = debt.kind === 'payable';
+    const account = state.accounts.find((item) => item.id === debt.accountId);
+    const overdue = debt.dueDate && new Date(`${debt.dueDate}T00:00:00`) < new Date(new Date().setHours(0, 0, 0, 0));
+    return `<article class="border border-[#DFDAD0] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div class="flex items-start gap-3"><span class="w-10 h-10 rounded-2xl ${payableDebt ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'} flex items-center justify-center text-lg">${payableDebt ? '↗' : '↙'}</span><div><div class="flex flex-wrap items-center gap-2"><h3 class="font-bold text-sm text-[#171717]">${escapeHtml(debt.person)}</h3><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${payableDebt ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}">${payableDebt ? 'Я должен' : 'Мне должны'}</span></div><p class="text-xs ${overdue ? 'text-red-700 font-semibold' : 'text-[#7E7B73]'} mt-1">${formatDebtDueDate(debt.dueDate)}${account ? ` · ${escapeHtml(account.name)}` : ''}</p>${debt.note ? `<p class="text-[11px] text-[#7E7B73] mt-1">${escapeHtml(debt.note)}</p>` : ''}</div></div><div class="flex items-center gap-2 sm:text-right"><div class="font-black text-lg ${payableDebt ? 'text-red-700' : 'text-emerald-700'} mr-auto sm:mr-2">₸${formatMoney(debt.amount)}</div><button onclick="markDebtPaid('${debt.id}')" class="px-3 py-2 bg-[#465948] hover:bg-[#38483a] text-white text-[11px] font-bold rounded-xl">Погашен</button><button onclick="deleteDebt('${debt.id}')" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-bold rounded-xl" aria-label="Удалить долг">Удалить</button></div></article>`;
+  }).join('');
+}
+
+window.openAddDebtModal = function() {
+  const account = document.getElementById('debt-account');
+  if (account) account.innerHTML = `<option value="">Не выбирать</option>${state.accounts.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join('')}`;
+  document.getElementById('debt-kind').value = 'payable';
+  document.getElementById('debt-person').value = '';
+  document.getElementById('debt-amount').value = '';
+  document.getElementById('debt-due-date').value = '';
+  document.getElementById('debt-note').value = '';
+  document.getElementById('modal-debt').classList.remove('hidden');
+};
+
+window.handleDebtForm = function(event) {
+  event.preventDefault();
+  const person = document.getElementById('debt-person').value.trim();
+  const amount = Number(document.getElementById('debt-amount').value);
+  if (!person || !Number.isFinite(amount) || amount <= 0) return;
+  if (!Array.isArray(state.debts)) state.debts = [];
+  state.debts.unshift({ id: `debt_${Date.now()}`, kind: document.getElementById('debt-kind').value, person, amount, dueDate: document.getElementById('debt-due-date').value, accountId: document.getElementById('debt-account').value, note: document.getElementById('debt-note').value.trim(), status: 'active', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  saveState();
+  renderAll();
+  window.closeModal('modal-debt');
+  window.showToast('Долг добавлен', '🤝');
+};
+
+window.markDebtPaid = function(id) {
+  const debt = (state.debts || []).find((item) => item.id === id);
+  if (!debt) return;
+  debt.status = 'paid';
+  debt.paidAt = new Date().toISOString();
+  debt.updatedAt = debt.paidAt;
+  saveState();
+  renderAll();
+  window.showToast('Долг отмечен как погашенный', '✓');
+};
+
+window.deleteDebt = function(id) {
+  const debt = (state.debts || []).find((item) => item.id === id);
+  if (!debt || !confirm(`Удалить долг «${debt.person}»?`)) return;
+  state.debts = state.debts.filter((item) => item.id !== id);
+  saveState();
+  renderAll();
+  window.showToast('Долг удалён', '🗑️');
+};
 
 // -------------------------------------------------------------
 // RENDERERS: PLAN, GOALS & ANALYTICS
@@ -1973,6 +2066,7 @@ function renderAll() {
   renderDeposits();
   renderOperationsFeed();
   renderRecurringPayments();
+  renderDebts();
   renderPlanWorkspace();
   const txCount = document.getElementById('sidebar-tx-count');
   if (txCount) txCount.innerText = String((state.transactions || []).length);

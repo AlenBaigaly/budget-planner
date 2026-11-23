@@ -1,6 +1,6 @@
 /** Versioned record-level merge helpers for Firebase sync. */
-export const CLOUD_SCHEMA_VERSION = 3;
-export const ENTITY_COLLECTIONS = ['accounts', 'categories', 'transactions', 'recurring', 'goals', 'closedDeposits'];
+export const CLOUD_SCHEMA_VERSION = 4;
+export const ENTITY_COLLECTIONS = ['accounts', 'categories', 'transactions', 'recurring', 'goals', 'debts', 'closedDeposits'];
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const isoNow = () => new Date().toISOString();
 const timestamp = (value) => Date.parse(value || 0) || 0;
