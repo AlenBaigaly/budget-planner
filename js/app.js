@@ -374,16 +374,17 @@ function normalizeState(rawState) {
   normalized.limits = raw.limits || normalized.limits;
   normalized.closedDeposits = Array.isArray(raw.closedDeposits) ? raw.closedDeposits : [];
 
-  // Older AQSHA deposits existed before their BCC product rules were saved.
-  // Restore the official preset defaults only when a rule is missing; an
-  // explicitly saved user value is never overwritten.
+  // All supported BCC deposits in AQSHA are replenishable. Older records were
+  // created before product rules existed, so explicitly restore this rule.
+  // The only difference here is partial withdrawal: it is unavailable for
+  // «Моя цель» and available for «Чемпион».
   normalized.accounts = normalized.accounts.map((account) => {
     if (account.type !== 'deposit' || !(account.isBCC || account.bank === 'bcc' || ['my_goal', 'champion'].includes(account.subType))) return account;
     const preset = account.subType === 'champion' ? BCC_DEPOSIT_TYPES.CHAMPION : BCC_DEPOSIT_TYPES.MY_GOAL;
     return {
       ...account,
       allowsWithdrawal: typeof account.allowsWithdrawal === 'boolean' ? account.allowsWithdrawal : preset.allowsWithdrawal,
-      allowsReplenishment: typeof account.allowsReplenishment === 'boolean' ? account.allowsReplenishment : preset.allowsReplenishment,
+      allowsReplenishment: true,
       minBalance: Number.isFinite(Number(account.minBalance)) ? Number(account.minBalance) : preset.minBalance
     };
   });
