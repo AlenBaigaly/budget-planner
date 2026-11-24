@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-bcc-replenish-v16';
+const CACHE_NAME = 'aqsha-budget-money-decimals-v17';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_bcc_replenish_v16',
+  './js/app.js?v=aqsha_money_decimals_v17',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v5',
   './js/imports/core.js',

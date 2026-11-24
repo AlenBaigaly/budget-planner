@@ -683,7 +683,7 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма вклада (₸)</label>
-            <input type="number" id="calc-input-amount" value="500000" step="10000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-base font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+            <input type="number" id="calc-input-amount" value="500000" step="0.01" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-base font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
           </div>
 
           <div>
@@ -704,7 +704,7 @@
 
           <div>
             <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Пополнение в месяц (₸)</label>
-            <input type="number" id="calc-input-topup" value="25000" step="5000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-base font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+            <input type="number" id="calc-input-topup" value="25000" step="0.01" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-base font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
           </div>
         </div>
 
@@ -959,7 +959,7 @@
       <form onsubmit="handleDepositForm(event)" class="space-y-3 text-xs">
         <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Тип вклада</label><select id="deposit-input-preset" onchange="applyDepositPreset()" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"><option value="bcc_goal">BCC «Моя цель» — без снятия</option><option value="bcc_champ">BCC «Чемпион» — частичное снятие</option></select></div>
         <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Название</label><input id="deposit-input-name" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div>
-        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма (₸)</label><input id="deposit-input-amount" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Срок, мес.</label><input id="deposit-input-term" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div></div>
+        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма (₸)</label><input id="deposit-input-amount" type="number" min="1" step="0.01" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Срок, мес.</label><input id="deposit-input-term" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div></div>
         <div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт списания</label><select id="deposit-input-source" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></select></div>
         <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Номинальная ставка, %</label><input id="deposit-input-rate" type="number" step="0.1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><div><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">ГЭСВ, %</label><input id="deposit-input-effective-rate" type="number" step="0.1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div></div>
         <button class="w-full py-3 bg-[#171717] text-white text-xs font-semibold rounded-full">Открыть вклад и перевести деньги</button>
@@ -1094,7 +1094,7 @@
 
         <div>
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Текущий баланс в тенге (₸)</label>
-          <input type="number" id="card-balance" oninput="updateCardModalPreview()" required value="100000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-base font-bold text-[#171717] focus:outline-none">
+          <input type="number" id="card-balance" oninput="updateCardModalPreview()" required value="100000" step="0.01" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-base font-bold text-[#171717] focus:outline-none">
         </div>
 
         <div class="pt-2">
@@ -1166,7 +1166,7 @@
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма в тенге (₸)</label>
           <div class="relative">
             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-lg text-[#171717]">₸</span>
-            <input type="number" id="input-tx-amount" required placeholder="0" class="w-full bg-white border border-[#DFDAD0] rounded-xl pl-9 pr-4 py-2.5 text-2xl font-black text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#465948]">
+            <input type="number" id="input-tx-amount" required step="0.01" placeholder="0" class="w-full bg-white border border-[#DFDAD0] rounded-xl pl-9 pr-4 py-2.5 text-2xl font-black text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#465948]">
           </div>
         </div>
 
@@ -1276,7 +1276,7 @@
         <input type="hidden" id="interest-account-id">
         <div>
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма вознаграждения (₸)</label>
-          <input type="number" id="input-interest-amount" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-xl font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
+          <input type="number" id="input-interest-amount" required step="0.01" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2.5 text-xl font-bold text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#465948]">
         </div>
 
         <div class="pt-2">
@@ -1305,7 +1305,7 @@
 
         <div>
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма в тенге (₸)</label>
-          <input type="number" id="rec-input-amount" required placeholder="0" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-sm font-bold text-[#171717] focus:outline-none">
+          <input type="number" id="rec-input-amount" required step="0.01" placeholder="0" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-sm font-bold text-[#171717] focus:outline-none">
         </div>
 
         <div>
@@ -1345,7 +1345,7 @@
 
         <div>
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Целевая сумма (₸)</label>
-          <input type="number" id="goal-input-amount" required placeholder="500000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-sm font-bold text-[#171717] focus:outline-none">
+          <input type="number" id="goal-input-amount" required step="0.01" placeholder="500000" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-sm font-bold text-[#171717] focus:outline-none">
         </div>
 
         <div>
@@ -1375,7 +1375,7 @@
       <form onsubmit="handleFormSetLimits(event)" class="space-y-4 text-xs">
         <div>
           <label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Общий лимит расходов на месяц (₸)</label>
-          <input type="number" id="limit-input-total" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-base font-bold text-[#171717] focus:outline-none">
+          <input type="number" id="limit-input-total" required step="0.01" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3.5 py-2 text-base font-bold text-[#171717] focus:outline-none">
         </div>
 
         <div class="pt-2">
@@ -1462,7 +1462,7 @@
 
 
   <!-- SCRIPTS MODULE -->
-  <script type="module" src="./js/app.js?v=aqsha_bcc_replenish_v16"></script>
+  <script type="module" src="./js/app.js?v=aqsha_money_decimals_v17"></script>
 
 </body>
 </html>
