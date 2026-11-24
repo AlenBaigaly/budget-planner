@@ -766,6 +766,27 @@ function accountOptions(accounts) {
   return accounts.map((account) => `<option value="${account.id}">${account.icon || '💳'} ${account.name} — ₸${formatMoney(getAccountBalances()[account.id] || 0)}</option>`).join('');
 }
 
+function closeDeposit(deposit, balance, destinationAccountId = '') {
+  const timestamp = makeTimestamp();
+  if (balance > 0) {
+    state.transactions.unshift({
+      id: `tx_${Date.now()}`,
+      type: 'transfer',
+      amount: balance,
+      accountId: deposit.id,
+      toAccountId: destinationAccountId,
+      categoryId: '',
+      note: `Закрытие вклада «${deposit.name}»`,
+      ...timestamp
+    });
+  }
+  state.closedDeposits = [...(state.closedDeposits || []), { ...deposit, closedAt: timestamp.date, finalBalance: Math.max(0, balance) }];
+  state.accounts = state.accounts.filter((account) => account.id !== deposit.id);
+  saveState();
+  renderAll();
+  window.showToast(balance > 0 ? 'Вклад закрыт, деньги переведены' : 'Вклад с нулевым остатком закрыт', '✓');
+}
+
 window.applyDepositPreset = function() {
   const preset = depositPreset(document.getElementById('deposit-input-preset').value);
   document.getElementById('deposit-input-name').value = preset.name;
@@ -820,9 +841,13 @@ window.openDepositAction = function(depositId, kind) {
   const balances = getAccountBalances();
   const candidates = state.accounts.filter((account) => account.type !== 'deposit');
   const balance = balances[depositId] || 0;
-  // A zero-balance deposit can be closed without a destination account because
-  // there is no money to transfer.
-  if (!candidates.length && !(kind === 'close' && balance <= 0)) { window.showToast('Нужен обычный счёт для перевода денег.', '⚠️'); return; }
+  // Zero-balance deposits need no destination and should not make the user
+  // go through an empty transfer form.
+  if (kind === 'close' && balance <= 0) {
+    closeDeposit(deposit, balance);
+    return;
+  }
+  if (!candidates.length) { window.showToast('Нужен обычный счёт для перевода денег.', '⚠️'); return; }
   if (kind === 'withdraw') {
     const check = validateDepositWithdrawal(deposit, 1, balances[depositId] || 0);
     if (!check.allowed) { window.showToast(check.reason, '⚠️'); return; }
@@ -856,14 +881,8 @@ window.handleDepositAction = function(event) {
   if (!deposit) return;
   if (kind === 'close') {
     if (balance > 0 && !other) { window.showToast('Выбери счёт, на который перевести остаток.', '⚠️'); return; }
-    const timestamp = makeTimestamp();
-    if (balance > 0) {
-      state.transactions.unshift({ id: `tx_${Date.now()}`, type: 'transfer', amount: balance, accountId: depositId, toAccountId: otherAccountId, categoryId: '', note: `Закрытие вклада «${deposit.name}»`, ...timestamp });
-    }
-    state.closedDeposits = [...(state.closedDeposits || []), { ...deposit, closedAt: timestamp.date, finalBalance: Math.max(0, balance) }];
-    state.accounts = state.accounts.filter((account) => account.id !== depositId);
-    saveState(); renderAll(); window.closeModal('modal-deposit-action');
-    window.showToast(balance > 0 ? 'Вклад закрыт, деньги переведены' : 'Вклад с нулевым остатком закрыт', '✓');
+    closeDeposit(deposit, balance, otherAccountId);
+    window.closeModal('modal-deposit-action');
     return;
   }
   if (!other || amount <= 0) return;
