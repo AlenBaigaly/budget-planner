@@ -374,6 +374,20 @@ function normalizeState(rawState) {
   normalized.limits = raw.limits || normalized.limits;
   normalized.closedDeposits = Array.isArray(raw.closedDeposits) ? raw.closedDeposits : [];
 
+  // Older AQSHA deposits existed before their BCC product rules were saved.
+  // Restore the official preset defaults only when a rule is missing; an
+  // explicitly saved user value is never overwritten.
+  normalized.accounts = normalized.accounts.map((account) => {
+    if (account.type !== 'deposit' || !(account.isBCC || account.bank === 'bcc' || ['my_goal', 'champion'].includes(account.subType))) return account;
+    const preset = account.subType === 'champion' ? BCC_DEPOSIT_TYPES.CHAMPION : BCC_DEPOSIT_TYPES.MY_GOAL;
+    return {
+      ...account,
+      allowsWithdrawal: typeof account.allowsWithdrawal === 'boolean' ? account.allowsWithdrawal : preset.allowsWithdrawal,
+      allowsReplenishment: typeof account.allowsReplenishment === 'boolean' ? account.allowsReplenishment : preset.allowsReplenishment,
+      minBalance: Number.isFinite(Number(account.minBalance)) ? Number(account.minBalance) : preset.minBalance
+    };
+  });
+
   normalized.goals = normalized.goals.map((goal) => ({
     ...goal,
     linkedAccounts: goal.linkedAccounts || goal.linkedAccountIds || []
@@ -458,8 +472,25 @@ function getAccountBalances() {
 }
 
 function formatMoney(amount) {
-  const num = Math.round(Number(amount) || 0);
-  return num.toLocaleString('ru-RU');
+  const parsed = Number(amount);
+  const num = Number.isFinite(parsed) ? Math.round((parsed + Number.EPSILON) * 100) / 100 : 0;
+  return num.toLocaleString('ru-RU', {
+    minimumFractionDigits: Number.isInteger(num) ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function parseKazakhstanAmount(value) {
+  const raw = String(value ?? '').trim().replace(/[\s\u00A0]/g, '').replace(/[^\d,.-]/g, '');
+  if (!raw) return NaN;
+  const commaIndex = raw.lastIndexOf(',');
+  const dotIndex = raw.lastIndexOf('.');
+  const decimalIndex = Math.max(commaIndex, dotIndex);
+  const integerPart = (decimalIndex === -1 ? raw : raw.slice(0, decimalIndex)).replace(/[,.]/g, '');
+  const fractionPart = decimalIndex === -1 ? '' : raw.slice(decimalIndex + 1).replace(/[,.]/g, '');
+  const normalized = `${integerPart || '0'}${fractionPart ? `.${fractionPart}` : ''}`;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) ? Math.round((amount + Number.EPSILON) * 100) / 100 : NaN;
 }
 
 function escapeHtml(value) {
@@ -877,7 +908,7 @@ window.handleDepositAction = function(event) {
   const deposit = state.accounts.find((account) => account.id === depositId && account.type === 'deposit');
   const other = state.accounts.find((account) => account.id === otherAccountId);
   const balance = getAccountBalances()[depositId] || 0;
-  const amount = kind === 'close' ? balance : Number(document.getElementById('deposit-action-amount').value);
+  const amount = kind === 'close' ? balance : parseKazakhstanAmount(document.getElementById('deposit-action-amount').value);
   if (!deposit) return;
   if (kind === 'close') {
     if (balance > 0 && !other) { window.showToast('Выбери счёт, на который перевести остаток.', '⚠️'); return; }

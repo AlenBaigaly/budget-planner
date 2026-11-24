@@ -969,7 +969,7 @@
 
   <!-- MODAL: DEPOSIT MONEY ACTION -->
   <div id="modal-deposit-action" class="fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl"><div class="flex justify-between items-center mb-3"><h3 id="deposit-action-title" class="font-bold text-base text-[#171717]">Операция по вкладу</h3><button onclick="closeModal('modal-deposit-action')" class="w-8 h-8 rounded-full bg-[#EAE6DC]">✕</button></div><p id="deposit-action-info" class="text-xs text-[#7E7B73] mb-4"></p><form onsubmit="handleDepositAction(event)" class="space-y-3 text-xs"><input type="hidden" id="deposit-action-kind"><input type="hidden" id="deposit-action-id"><div><label id="deposit-action-account-label" class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт</label><select id="deposit-action-account" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></select></div><div id="deposit-action-amount-row"><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма (₸)</label><input id="deposit-action-amount" type="number" min="1" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><button id="deposit-action-submit" class="w-full py-3 bg-[#465948] text-white text-xs font-semibold rounded-full">Подтвердить</button></form></div>
+    <div class="bg-[#FAF9F5] border border-[#DFDAD0] rounded-3xl max-w-sm w-full p-6 shadow-2xl"><div class="flex justify-between items-center mb-3"><h3 id="deposit-action-title" class="font-bold text-base text-[#171717]">Операция по вкладу</h3><button onclick="closeModal('modal-deposit-action')" class="w-8 h-8 rounded-full bg-[#EAE6DC]">✕</button></div><p id="deposit-action-info" class="text-xs text-[#7E7B73] mb-4"></p><form onsubmit="handleDepositAction(event)" class="space-y-3 text-xs"><input type="hidden" id="deposit-action-kind"><input type="hidden" id="deposit-action-id"><div><label id="deposit-action-account-label" class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Счёт</label><select id="deposit-action-account" class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></select></div><div id="deposit-action-amount-row"><label class="block text-[11px] font-semibold text-[#7E7B73] mb-1">Сумма (₸)</label><input id="deposit-action-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Например: 18 097,62" required class="w-full bg-white border border-[#DFDAD0] rounded-xl px-3 py-2"></div><button id="deposit-action-submit" class="w-full py-3 bg-[#465948] text-white text-xs font-semibold rounded-full">Подтвердить</button></form></div>
   </div>
 
 
@@ -1462,7 +1462,7 @@
 
 
   <!-- SCRIPTS MODULE -->
-  <script type="module" src="./js/app.js?v=aqsha_deposit_close_v14"></script>
+  <script type="module" src="./js/app.js?v=aqsha_deposit_amount_v15"></script>
 
 </body>
 </html>
