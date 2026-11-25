@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-operation-label-v19';
+const CACHE_NAME = 'aqsha-budget-home-widgets-v20';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_time_input_v18',
+  './js/app.js?v=aqsha_home_widgets_v20',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v5',
   './js/imports/core.js',

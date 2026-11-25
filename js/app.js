@@ -1064,6 +1064,27 @@ function renderCapitalWorkspace() {
 
   // Upcoming 7 days calendar
   renderUpcomingCalendar();
+  renderRecentHomeTransactions();
+}
+
+function getNextRecurringDate(dayOfMonth, now = new Date()) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const makeDate = (year, month) => new Date(year, month, Math.min(Math.max(1, Number(dayOfMonth) || 1), new Date(year, month + 1, 0).getDate()));
+  let candidate = makeDate(today.getFullYear(), today.getMonth());
+  if (candidate < today) candidate = makeDate(today.getFullYear(), today.getMonth() + 1);
+  return candidate;
+}
+
+function getUpcomingRecurringPayments(days, now = new Date()) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return (state.recurring || [])
+    .map((recurring) => {
+      const dueDate = getNextRecurringDate(recurring.dayOfMonth, today);
+      const daysUntil = Math.round((dueDate - today) / 86400000);
+      return { ...recurring, dueDate, daysUntil };
+    })
+    .filter((recurring) => recurring.daysUntil >= 0 && recurring.daysUntil <= days)
+    .sort((a, b) => a.dueDate - b.dueDate);
 }
 
 function renderUpcomingCalendar() {
@@ -1071,19 +1092,14 @@ function renderUpcomingCalendar() {
   if (!container) return;
 
   const now = new Date();
-  const todayDate = now.getDate();
-  const next7Days = todayDate + 7;
-
-  const upcoming = (state.recurring || []).filter(rec => {
-    const day = Number(rec.dayOfMonth) || 1;
-    return day >= todayDate && day <= next7Days;
-  });
+  const upcoming = getUpcomingRecurringPayments(7, now);
+  const upcoming30Days = getUpcomingRecurringPayments(30, now);
 
   const sum7d = upcoming
     .filter(r => r.type === 'expense')
     .reduce((acc, r) => acc + Number(r.amount || 0), 0);
 
-  const sum30d = (state.recurring || [])
+  const sum30d = upcoming30Days
     .filter(r => r.type === 'expense')
     .reduce((acc, r) => acc + Number(r.amount || 0), 0);
 
@@ -1113,7 +1129,7 @@ function renderUpcomingCalendar() {
           <span class="w-6 h-6 rounded-lg bg-[#FAF9F5] flex items-center justify-center text-xs">${r.icon || '📅'}</span>
           <div>
             <div class="font-bold text-[#171717]">${r.name}</div>
-            <div class="text-[10px] text-[#7E7B73]">${r.dayOfMonth}-е число • ${accName}</div>
+            <div class="text-[10px] text-[#7E7B73]">${r.daysUntil === 0 ? 'Сегодня' : `Через ${r.daysUntil} дн.`} • ${accName}</div>
           </div>
         </div>
         <div class="text-right flex items-center gap-2">
@@ -1126,6 +1142,47 @@ function renderUpcomingCalendar() {
         </div>
       </div>
     `;
+  }).join('');
+}
+
+function getTransactionDateTime(transaction) {
+  const date = String(transaction.date || '');
+  const time = /^\d{2}:\d{2}$/.test(transaction.time || '') ? transaction.time : '00:00';
+  const parsed = new Date(`${date}T${time}:00`);
+  if (!Number.isNaN(parsed.getTime())) return parsed;
+  const created = new Date(transaction.createdAt || 0);
+  return Number.isNaN(created.getTime()) ? new Date(0) : created;
+}
+
+function renderRecentHomeTransactions() {
+  const container = document.getElementById('recent-home-tx-list');
+  if (!container) return;
+  const recent = [...(state.transactions || [])]
+    .sort((a, b) => getTransactionDateTime(b) - getTransactionDateTime(a))
+    .slice(0, 5);
+
+  if (!recent.length) {
+    container.innerHTML = '<div class="py-6 text-center text-xs text-[#8E8B83]">Операций пока нет</div>';
+    return;
+  }
+
+  container.innerHTML = recent.map((transaction) => {
+    const category = state.categories.find((item) => item.id === transaction.categoryId);
+    const account = state.accounts.find((item) => item.id === transaction.accountId);
+    const destination = state.accounts.find((item) => item.id === transaction.toAccountId);
+    const isIncome = transaction.type === 'income';
+    const isTransfer = transaction.type === 'transfer';
+    const dateTime = getTransactionDateTime(transaction);
+    const label = transaction.note || category?.name || (isTransfer ? 'Перевод между счетами' : 'Операция');
+    const accountLabel = isTransfer
+      ? `${account?.name || 'Счёт'} → ${destination?.name || 'Счёт'}`
+      : account?.name || 'Счёт не указан';
+    const amountLabel = isTransfer ? `⇄₸${formatMoney(transaction.amount)}` : `${isIncome ? '+' : '-'}₸${formatMoney(transaction.amount)}`;
+    const amountClass = isTransfer ? 'text-[#465948]' : (isIncome ? 'text-emerald-700' : 'text-red-700');
+    return `<div class="flex items-center justify-between gap-3 py-3 text-xs">
+      <div class="flex min-w-0 items-center gap-2.5"><span class="w-2 h-2 shrink-0 rounded-full ${isTransfer ? 'bg-[#465948]' : (isIncome ? 'bg-emerald-500' : 'bg-red-400')}"></span><div class="min-w-0"><div class="truncate font-bold text-[#171717]">${escapeHtml(label)}</div><div class="mt-0.5 truncate text-[10px] text-[#7E7B73]">${dateTime.toLocaleDateString('ru-RU')} · ${dateTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} · ${escapeHtml(accountLabel)}</div></div></div>
+      <div class="shrink-0 font-bold ${amountClass}">${amountLabel}</div>
+    </div>`;
   }).join('');
 }
 
