@@ -26,7 +26,7 @@ import {
   onCloudDataChanged,
   onSyncStatusChanged,
   syncStateToCloud
-} from './firebase-config.js?v=aqsha_sync_v6';
+} from './firebase-config.js?v=aqsha_sync_v7';
 
 import Tesseract from '../vendor/tesseract.esm.min.js';
 
@@ -52,6 +52,7 @@ const AQSHA_STORAGE_KEY = 'aqsha_budget_state_v2';
 let applyingRemoteState = false;
 let storageReady = false;
 let lastPersistedState = null;
+let lastMergedUploadFingerprint = '';
 
 // Bank-card themes inspired by the visual language of the real products.
 // They are illustrations only: no real card details or numbers are displayed.
@@ -2256,6 +2257,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   onAuthChanged((user) => {
+    lastMergedUploadFingerprint = '';
     updateAuthButton(user);
     updateSyncStatus(user ? 'syncing' : 'local');
   });
@@ -2267,7 +2269,13 @@ document.addEventListener('DOMContentLoaded', () => {
       lastPersistedState = JSON.parse(JSON.stringify(state));
       saveStateToIndexedDB(state).catch((err) => console.warn('Не удалось сохранить облачные данные локально:', err));
       applyingRemoteState = false;
-      if (mergedStateNeedsCloudSync(state, event.data)) syncStateToCloud(state, 0);
+      const mergedFingerprint = cloudComparableState(state);
+      if (mergedStateNeedsCloudSync(state, event.data) && mergedFingerprint !== lastMergedUploadFingerprint) {
+        lastMergedUploadFingerprint = mergedFingerprint;
+        syncStateToCloud(state, 0).then((synced) => {
+          if (!synced) lastMergedUploadFingerprint = '';
+        });
+      }
       renderAll();
       updateSyncStatus('synced');
     }

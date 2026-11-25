@@ -182,8 +182,24 @@ export async function setupFirestoreRealtimeSync(userId) {
   if (!firestoreDb || !userId) return;
   if (unsubscribeCloudSync) unsubscribeCloudSync();
 
-  const { doc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+  const { doc, onSnapshot, getDocFromServer } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
   const userDocRef = doc(firestoreDb, 'users', userId, 'budget_app', 'state');
+  const handleServerSnapshot = (snap) => {
+    if (snap.exists()) {
+      const data = snap.data();
+      syncListeners.forEach((fn) => fn({ type: 'remote-state', data }));
+      emitSyncStatus('synced');
+    } else {
+      // A new account has no cloud document yet. The UI will upload its
+      // current local state once, after this explicit server confirmation.
+      syncListeners.forEach((fn) => fn({ type: 'missing-remote-state' }));
+      emitSyncStatus('syncing');
+    }
+  };
+  const handleSyncError = (err) => {
+    console.warn('Firestore realtime sync error:', err);
+    emitSyncStatus(navigator.onLine ? 'error' : 'offline');
+  };
 
   unsubscribeCloudSync = onSnapshot(userDocRef, { includeMetadataChanges: true }, (snap) => {
     // Firestore first returns its local cache. A cached "missing" document is
@@ -200,20 +216,16 @@ export async function setupFirestoreRealtimeSync(userId) {
       emitSyncStatus('syncing');
       return;
     }
-    if (snap.exists()) {
-      const data = snap.data();
-      syncListeners.forEach((fn) => fn({ type: 'remote-state', data }));
-      emitSyncStatus('synced');
-    } else {
-      // A new account has no cloud document yet. The UI will upload its
-      // current local state once, after this explicit signal.
-      syncListeners.forEach((fn) => fn({ type: 'missing-remote-state' }));
-      emitSyncStatus('syncing');
-    }
-  }, (err) => {
-    console.warn('Firestore realtime sync error:', err);
-    emitSyncStatus(navigator.onLine ? 'error' : 'offline');
-  });
+    handleServerSnapshot(snap);
+  }, handleSyncError);
+
+  // A real server read makes the first-device experience deterministic. The
+  // listener may start from IndexedDB and wait indefinitely for a WebChannel
+  // reconnection; this request either returns the account's state or reports
+  // a visible error instead of leaving "Синхронизация…" forever.
+  getDocFromServer(userDocRef)
+    .then(handleServerSnapshot)
+    .catch(handleSyncError);
 }
 
 /**

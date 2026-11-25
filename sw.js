@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-merge-sync-v23';
+const CACHE_NAME = 'aqsha-budget-sync-stable-v24';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_merge_sync_v23',
+  './js/app.js?v=aqsha_sync_stable_v24',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v5',
   './js/imports/core.js',
@@ -16,7 +16,7 @@ const ASSETS = [
   './vendor/tesseract-worker.min.js',
   './js/bcc-deposits.js',
   './js/analytics.js',
-  './js/firebase-config.js?v=aqsha_sync_v6',
+  './js/firebase-config.js?v=aqsha_sync_v7',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'
