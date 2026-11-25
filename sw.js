@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aqsha-budget-time-input-v18';
+const CACHE_NAME = 'aqsha-budget-operation-label-v19';
 const ASSETS = [
   './',
   './index.html',
