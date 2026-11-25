@@ -790,6 +790,23 @@ function makeTimestamp() {
   return { date: now.toISOString().split('T')[0], time: now.toTimeString().slice(0, 5), createdAt: now.toISOString() };
 }
 
+function normalizeOperationTime(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  let match = raw.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!match) {
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length === 3 || digits.length === 4) {
+      match = [raw, digits.slice(0, -2), digits.slice(-2)];
+    }
+  }
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours > 23 || minutes > 59) return null;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
 function depositAccounts() {
   return state.accounts.filter((account) => account.type === 'deposit');
 }
@@ -1849,7 +1866,14 @@ window.handleFormTransaction = function(e) {
   const toAccountId = document.getElementById('input-tx-to-account').value;
   const categoryId = document.getElementById('input-tx-category').value;
   const date = document.getElementById('input-tx-date').value || getLocalDateValue();
-  const time = document.getElementById('input-tx-time').value || getLocalTimeValue();
+  const timeInput = document.getElementById('input-tx-time');
+  const enteredTime = normalizeOperationTime(timeInput?.value);
+  if (enteredTime === null) {
+    window.showToast('Укажи время в формате 22:07 или 2207.', '⚠️');
+    timeInput?.focus();
+    return;
+  }
+  const time = enteredTime || getLocalTimeValue();
 
   if (!amount || !note) return;
 
@@ -2140,6 +2164,12 @@ if ('serviceWorker' in navigator) {
 document.addEventListener('DOMContentLoaded', () => {
   renderAll();
   bindDepositCalculator();
+
+  const transactionTimeInput = document.getElementById('input-tx-time');
+  transactionTimeInput?.addEventListener('blur', () => {
+    const normalized = normalizeOperationTime(transactionTimeInput.value);
+    if (normalized) transactionTimeInput.value = normalized;
+  });
 
   onAuthChanged((user) => {
     const button = document.getElementById('btn-google-auth');

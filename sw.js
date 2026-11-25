@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-money-decimals-v17';
+const CACHE_NAME = 'aqsha-budget-time-input-v18';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_money_decimals_v17',
+  './js/app.js?v=aqsha_time_input_v18',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v5',
   './js/imports/core.js',
