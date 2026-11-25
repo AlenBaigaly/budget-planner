@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-server-sync-v22';
+const CACHE_NAME = 'aqsha-budget-merge-sync-v23';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_server_sync_v22',
+  './js/app.js?v=aqsha_merge_sync_v23',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v5',
   './js/imports/core.js',

@@ -36,6 +36,7 @@ import {
 } from './storage.js?v=aqsha_sync_v4';
 
 import {
+  ENTITY_COLLECTIONS,
   ensureSyncSchema,
   mergeStates,
   prepareLocalStateForSave
@@ -441,6 +442,25 @@ function saveState() {
   } catch (err) {
     console.warn('Error scheduling state save:', err);
   }
+}
+
+function cloudComparableState(source) {
+  const copy = JSON.parse(JSON.stringify(source || {}));
+  delete copy.lastUpdated;
+  if (copy._sync) copy._sync = { schemaVersion: copy._sync.schemaVersion };
+  ENTITY_COLLECTIONS.forEach((collection) => {
+    copy[collection] = Array.isArray(copy[collection])
+      ? [...copy[collection]].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')))
+      : [];
+  });
+  copy.tombstones = Array.isArray(copy.tombstones)
+    ? [...copy.tombstones].sort((a, b) => `${a.collection}:${a.id}:${a.deletedAt}`.localeCompare(`${b.collection}:${b.id}:${b.deletedAt}`))
+    : [];
+  return JSON.stringify(copy);
+}
+
+function mergedStateNeedsCloudSync(mergedState, cloudState) {
+  return cloudComparableState(mergedState) !== cloudComparableState(cloudState);
 }
 
 function getAccountBalances() {
@@ -2247,6 +2267,7 @@ document.addEventListener('DOMContentLoaded', () => {
       lastPersistedState = JSON.parse(JSON.stringify(state));
       saveStateToIndexedDB(state).catch((err) => console.warn('Не удалось сохранить облачные данные локально:', err));
       applyingRemoteState = false;
+      if (mergedStateNeedsCloudSync(state, event.data)) syncStateToCloud(state, 0);
       renderAll();
       updateSyncStatus('synced');
     }
