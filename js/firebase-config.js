@@ -186,6 +186,15 @@ export async function setupFirestoreRealtimeSync(userId) {
   const userDocRef = doc(firestoreDb, 'users', userId, 'budget_app', 'state');
 
   unsubscribeCloudSync = onSnapshot(userDocRef, { includeMetadataChanges: true }, (snap) => {
+    // Firestore first returns its local cache. A cached "missing" document is
+    // not proof that the user's cloud state is empty, especially on a newly
+    // signed-in device. Do not call it synced and never upload local state
+    // until a server-confirmed snapshot arrives.
+    if (snap.metadata?.fromCache) {
+      emitSyncStatus(navigator.onLine ? 'syncing' : 'offline');
+      return;
+    }
+
     // CRITICAL: Ignore local uncommitted writes to prevent infinite feedback echo loops
     if (snap.metadata && snap.metadata.hasPendingWrites) {
       emitSyncStatus('syncing');

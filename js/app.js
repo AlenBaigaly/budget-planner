@@ -26,7 +26,7 @@ import {
   onCloudDataChanged,
   onSyncStatusChanged,
   syncStateToCloud
-} from './firebase-config.js?v=aqsha_sync_v4';
+} from './firebase-config.js?v=aqsha_sync_v6';
 
 import Tesseract from '../vendor/tesseract.esm.min.js';
 

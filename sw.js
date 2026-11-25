@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-google-signin-v21';
+const CACHE_NAME = 'aqsha-budget-server-sync-v22';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_google_signin_v21',
+  './js/app.js?v=aqsha_server_sync_v22',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v5',
   './js/imports/core.js',
@@ -16,7 +16,7 @@ const ASSETS = [
   './vendor/tesseract-worker.min.js',
   './js/bcc-deposits.js',
   './js/analytics.js',
-  './js/firebase-config.js?v=aqsha_sync_v4',
+  './js/firebase-config.js?v=aqsha_sync_v6',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'
