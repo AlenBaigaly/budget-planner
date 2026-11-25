@@ -1888,23 +1888,30 @@ function populateSelectCategories() {
 }
 
 function updateAuthButton(user) {
-  const button = document.getElementById('btn-google-auth');
-  if (!button) return;
-  button.innerText = user ? `Выйти: ${user.displayName || user.email || 'Google'}` : 'Войти через Google';
+  document.querySelectorAll('[data-google-auth]').forEach((button) => {
+    button.dataset.signedIn = user ? 'true' : 'false';
+    button.innerText = user ? `Выйти: ${user.displayName || user.email || 'Google'}` : 'Войти через Google';
+  });
+  const description = document.getElementById('google-auth-description');
+  if (description) {
+    description.textContent = user
+      ? `Данные привязаны к аккаунту ${user.email || user.displayName || 'Google'} и синхронизируются между устройствами.`
+      : 'Войди через Google, чтобы синхронизировать данные между телефоном и компьютером.';
+  }
 }
 
 function updateSyncStatus(status) {
-  const el = document.getElementById('sync-status');
-  if (!el) return;
   const labels = { local: 'Локально', syncing: 'Синхронизация…', synced: 'Синхронизировано', offline: 'Офлайн', error: 'Ошибка синка' };
   const colors = { local: 'text-[#7E7B73]', syncing: 'text-amber-700', synced: 'text-emerald-700', offline: 'text-[#7E7B73]', error: 'text-red-700' };
-  el.className = `text-[10px] font-semibold ${colors[status] || colors.local}`;
-  el.textContent = labels[status] || labels.local;
+  document.querySelectorAll('[data-sync-status]').forEach((el) => {
+    el.className = `text-[10px] font-semibold ${colors[status] || colors.local}`;
+    el.textContent = labels[status] || labels.local;
+  });
 }
 
 window.toggleGoogleAuth = async function() {
   try {
-    const button = document.getElementById('btn-google-auth');
+    const button = document.querySelector('[data-google-auth]');
     if (button && button.dataset.signedIn === 'true') {
       await logoutUser();
       return;
@@ -2229,8 +2236,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   onAuthChanged((user) => {
-    const button = document.getElementById('btn-google-auth');
-    if (button) button.dataset.signedIn = user ? 'true' : 'false';
     updateAuthButton(user);
     updateSyncStatus(user ? 'syncing' : 'local');
   });

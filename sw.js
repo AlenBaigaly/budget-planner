@@ -1,9 +1,9 @@
-const CACHE_NAME = 'aqsha-budget-home-widgets-v20';
+const CACHE_NAME = 'aqsha-budget-google-signin-v21';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './js/app.js?v=aqsha_home_widgets_v20',
+  './js/app.js?v=aqsha_google_signin_v21',
   './js/storage.js?v=aqsha_sync_v4',
   './js/state-sync.js?v=aqsha_sync_v5',
   './js/imports/core.js',

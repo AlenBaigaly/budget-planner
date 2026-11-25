@@ -288,10 +288,10 @@
         <span>+</span> Новая операция
       </button>
 
-      <button id="btn-google-auth" onclick="toggleGoogleAuth()" class="w-full py-2.5 bg-white border border-[#DFDAD0] hover:bg-[#EAE6DC] text-[#171717] text-xs font-semibold rounded-2xl transition">
+      <button id="btn-google-auth" data-google-auth onclick="toggleGoogleAuth()" class="w-full py-2.5 bg-white border border-[#DFDAD0] hover:bg-[#EAE6DC] text-[#171717] text-xs font-semibold rounded-2xl transition">
         Войти через Google
       </button>
-      <div id="sync-status" class="text-[10px] font-semibold text-[#7E7B73] text-center" aria-live="polite">Локально</div>
+      <div id="sync-status" data-sync-status class="text-[10px] font-semibold text-[#7E7B73] text-center" aria-live="polite">Локально</div>
 
       <div class="flex items-center justify-between p-3 bg-[#EAE6DC] rounded-2xl text-xs">
         <button onclick="openSettingsModal()" class="flex items-center gap-2 text-[#171717] font-semibold hover:underline">
@@ -1397,6 +1397,17 @@
       </div>
 
       <div class="space-y-3 text-xs">
+        <div class="p-4 bg-[#EEF3ED] border border-[#CEDBCF] rounded-2xl flex flex-wrap justify-between items-center gap-3">
+          <div class="min-w-0">
+            <div class="font-bold text-[#171717]">☁️ Аккаунт и синхронизация</div>
+            <div id="google-auth-description" class="text-[11px] text-[#58705B] mt-1">Войди через Google, чтобы синхронизировать данные между телефоном и компьютером.</div>
+            <div data-sync-status class="text-[10px] font-semibold text-[#7E7B73] mt-1" aria-live="polite">Локально</div>
+          </div>
+          <button data-google-auth onclick="toggleGoogleAuth()" class="shrink-0 px-3 py-2 bg-[#465948] hover:bg-[#38483a] text-white font-semibold rounded-xl transition">
+            Войти через Google
+          </button>
+        </div>
+
         <div class="p-4 bg-white border border-[#DFDAD0] rounded-2xl flex justify-between items-center">
           <div>
             <div class="font-bold text-[#171717]">💾 Экспорт базы (JSON)</div>
@@ -1462,7 +1473,7 @@
 
 
   <!-- SCRIPTS MODULE -->
-  <script type="module" src="./js/app.js?v=aqsha_home_widgets_v20"></script>
+  <script type="module" src="./js/app.js?v=aqsha_google_signin_v21"></script>
 
 </body>
 </html>
